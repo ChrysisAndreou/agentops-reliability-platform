@@ -448,7 +448,7 @@ class TestMultiAgentBenchmarks:
 
         names = [b.name for b in ALL_BENCHMARKS]
         assert "multi-agent" in names
-        assert len(ALL_BENCHMARKS) == 7
+        assert len(ALL_BENCHMARKS) >= 7
 
     def test_multi_agent_benchmark_listed(self):
         from agentops.evals.benchmarks import list_benchmarks

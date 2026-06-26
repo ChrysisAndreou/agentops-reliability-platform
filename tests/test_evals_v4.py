@@ -92,7 +92,7 @@ class TestExpandedBenchmarks:
 
     def test_total_task_count(self):
         total = sum(len(b.tasks) for b in ALL_BENCHMARKS)
-        assert total >= 30  # 7 benchmarks × 5 tasks = 35
+        assert total >= 40  # 8 benchmarks × 5+ tasks
 
 
 class TestComparator:
