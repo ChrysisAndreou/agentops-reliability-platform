@@ -73,14 +73,13 @@ class ToolResult:
 
 class ToolDefinition(BaseModel):
     """Schema definition for a tool that agents can call."""
+    model_config = {"arbitrary_types_allowed": True}
+
     name: str
     description: str
     parameters: dict[str, Any] = Field(default_factory=dict)
     required: list[str] = Field(default_factory=list)
     fn: Callable | None = None  # not serialized
-
-    class Config:
-        arbitrary_types_allowed = True
 
     def to_openai_function(self) -> dict[str, Any]:
         return {
