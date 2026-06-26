@@ -1164,5 +1164,218 @@ def model_benchmark(
         print(report.to_json())
 
 
+# ── Prompt Management Commands ────────────────────────────────────
+
+prompt_app = typer.Typer(help="Manage and optimize prompts", no_args_is_help=True)
+app.add_typer(prompt_app, name="prompt")
+
+
+@prompt_app.command("register")
+def prompt_register(
+    name: str = typer.Option(..., "--name", "-n", help="Prompt name"),
+    content: str = typer.Option(..., "--content", "-c", help="Prompt content with {{variables}}"),
+    description: str = typer.Option("", "--description", "-d", help="Description"),
+    category: str = typer.Option("custom", "--category", help="Category: system, task, retrieval, verification, tool_use, chain_of_thought, custom"),
+    author: str = typer.Option("agentops", "--author", help="Author name"),
+):
+    """Register a new prompt template."""
+    from agentops.prompts.registry import PromptRegistry
+
+    registry = PromptRegistry()
+    version = registry.register(
+        content=content,
+        name=name,
+        description=description,
+        category=category,
+        author=author,
+    )
+    print(f"Registered '{name}' v{version.version}")
+    print(f"  Variables: {registry.get_template(name).variables}")
+    print(f"  Hash: {version.content_hash}")
+
+
+@prompt_app.command("update")
+def prompt_update(
+    name: str = typer.Option(..., "--name", "-n", help="Prompt name"),
+    content: str = typer.Option(..., "--content", "-c", help="New prompt content"),
+    changelog: str = typer.Option("", "--changelog", "-m", help="Description of changes"),
+    author: str = typer.Option("agentops", "--author", help="Author name"),
+):
+    """Create a new version of an existing prompt."""
+    from agentops.prompts.registry import PromptRegistry
+
+    registry = PromptRegistry()
+    version = registry.update(name, content, author=author, changelog=changelog)
+    print(f"Updated '{name}' → v{version.version}")
+    print(f"  Variables: {registry.get_template(name).variables}")
+    print(f"  Hash: {version.content_hash}")
+    if changelog:
+        print(f"  Changelog: {changelog}")
+
+
+@prompt_app.command("list")
+def prompt_list(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Show version history"),
+):
+    """List all registered prompt templates."""
+    from agentops.prompts.registry import PromptRegistry
+
+    registry = PromptRegistry()
+    prompts = registry.list_prompts()
+    
+    print(f"\nPrompt Registry: {len(prompts)} prompts, {registry.total_versions} total versions\n")
+    print(f"{'Name':<35} {'Cat':<18} {'Vers':<6} {'Variables'}")
+    print("-" * 90)
+    for p in prompts:
+        print(f"{p['name']:<35} {p['category']:<18} {p['current_version']:<6} {', '.join(p['variables'])}")
+
+    if verbose:
+        for p in prompts:
+            print(f"\n{'='*60}")
+            print(f"Prompt: {p['name']} (v{p['current_version']})")
+            print(f"Description: {p['description'] or '(none)'}")
+            print(f"Category: {p['category']}")
+            print(f"Latest hash: {p['latest_hash']}")
+            versions = registry.list_versions(p['name'])
+            for v in versions:
+                print(f"  v{v['version']} — {v['changelog']} ({v['author']}, {v['content_hash']})")
+
+
+@prompt_app.command("show")
+def prompt_show(
+    name: str = typer.Option(..., "--name", "-n", help="Prompt name"),
+    version: int = typer.Option(None, "--version", "-v", help="Specific version (default: latest)"),
+):
+    """Show a prompt's content."""
+    from agentops.prompts.registry import PromptRegistry
+
+    registry = PromptRegistry()
+    v = registry.get(name, version)
+    print(f"{'='*60}")
+    print(f"Prompt: {name} v{v.version}")
+    print(f"Hash: {v.content_hash}")
+    print(f"Author: {v.author}")
+    print(f"Changelog: {v.changelog}")
+    print(f"Variables: {registry.get_template(name).variables}")
+    print(f"{'='*60}")
+    print(v.content)
+
+
+@prompt_app.command("diff")
+def prompt_diff(
+    name: str = typer.Option(..., "--name", "-n", help="Prompt name"),
+    version_a: int = typer.Option(..., "--from", "-a", help="Source version"),
+    version_b: int = typer.Option(None, "--to", "-b", help="Target version (default: latest)"),
+):
+    """Show diff between two prompt versions."""
+    from agentops.prompts.registry import PromptRegistry
+
+    registry = PromptRegistry()
+    if version_b is None:
+        version_b = version_a
+        version_a = version_b - 1
+
+    diff = registry.diff(name, version_a, version_b)
+    print(diff.to_summary())
+    print(f"\nLines added ({len(diff.lines_added)}):")
+    for i, line in enumerate(diff.lines_added[:50]):
+        print(f"  + {line}")
+    print(f"\nLines removed ({len(diff.lines_removed)}):")
+    for i, line in enumerate(diff.lines_removed[:50]):
+        print(f"  - {line}")
+
+
+@prompt_app.command("compare")
+def prompt_compare(
+    prompt_name: str = typer.Option(..., "--prompt", "-p", help="Prompt to compare"),
+    version_a: int = typer.Option(..., "--version-a", "-a", help="First version"),
+    version_b: int = typer.Option(..., "--version-b", "-b", help="Second version"),
+    benchmarks: str = typer.Option("support-tickets", "--benchmarks", "-B", help="Comma-separated benchmark names"),
+    output_dir: str = typer.Option(None, "--output", "-o", help="Output directory for report"),
+):
+    """A/B compare two prompt versions against benchmarks."""
+    from agentops.prompts.comparator import create_comparator
+    from agentops.prompts.state import ComparisonConfig
+    from agentops.prompts.registry import PromptRegistry
+
+    registry = PromptRegistry()
+    v_a = registry.get(prompt_name, version_a)
+    v_b = registry.get(prompt_name, version_b)
+
+    comparator = create_comparator(registry=registry, simulated=True)
+    config = ComparisonConfig(
+        prompt_name=prompt_name,
+        version_a=version_a,
+        version_b=version_b,
+        benchmark_names=[b.strip() for b in benchmarks.split(",")],
+        num_runs=3,
+    )
+
+    result = comparator.compare(config, v_a.content, v_b.content)
+    report = result.to_markdown()
+
+    print(report)
+
+    if output_dir:
+        from pathlib import Path
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        report_path = out / f"prompt_comparison_{prompt_name}_v{version_a}_v{version_b}.md"
+        report_path.write_text(report)
+        print(f"\nReport saved: {report_path}")
+
+
+@prompt_app.command("optimize")
+def prompt_optimize(
+    prompt_name: str = typer.Option(..., "--prompt", "-p", help="Prompt to optimize"),
+    version: int = typer.Option(None, "--version", "-v", help="Version to optimize from (default: latest)"),
+    max_iterations: int = typer.Option(5, "--max-iter", "-n", help="Maximum optimization iterations"),
+    target: float = typer.Option(0.85, "--target", "-t", help="Target composite score (0.0-1.0)"),
+    output_dir: str = typer.Option(None, "--output", "-o", help="Output directory for report"),
+):
+    """Iteratively optimize a prompt using evaluation feedback."""
+    from agentops.prompts.registry import PromptRegistry
+    from agentops.prompts.comparator import create_optimizer
+
+    registry = PromptRegistry()
+    v = registry.get(prompt_name, version)
+
+    optimizer = create_optimizer(registry=registry, simulated=True)
+    result = optimizer.optimize(
+        prompt_name=prompt_name,
+        initial_content=v.content,
+        max_iterations=max_iterations,
+        target_score=target,
+    )
+
+    report = result.to_markdown()
+    print(report)
+
+    if output_dir:
+        from pathlib import Path
+        out = Path(output_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        report_path = out / f"prompt_optimization_{prompt_name}.md"
+        report_path.write_text(report)
+        print(f"\nReport saved: {report_path}")
+
+
+@prompt_app.command("render")
+def prompt_render(
+    name: str = typer.Option(..., "--name", "-n", help="Prompt name"),
+    version: int = typer.Option(None, "--version", "-v", help="Version (default: latest)"),
+    vars_json: str = typer.Option("{}", "--vars", help="JSON object with variable values"),
+):
+    """Render a prompt template with variable values."""
+    import json
+
+    from agentops.prompts.registry import PromptRegistry
+
+    registry = PromptRegistry()
+    variables = json.loads(vars_json)
+    result = registry.render(name, version, **variables)
+    print(result)
+
+
 if __name__ == "__main__":
     app()

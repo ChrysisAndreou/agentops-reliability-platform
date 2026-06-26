@@ -17,7 +17,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 9 benchmarks (45 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Systematic evaluation**: 10 benchmarks (50 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
 - **LLM-as-Judge evaluation**: Multi-dimensional quality assessment (accuracy, completeness, relevance, safety, citation, groundedness, clarity) using deterministic or real-LLM judges. Model comparison framework with rankings, dimension breakdowns, and cost-performance Pareto analysis.
 - **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
@@ -25,6 +25,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Regression testing**: Save benchmark results as versioned baselines and run CI-friendly regression checks that detect when agent quality drops below configured thresholds across all 8 benchmarks.
 - **Failure classification**: automatic pattern detection for 8 failure modes.
 - **Cost & latency budget gates**: configurable per-run and per-step cost/latency limits with graceful degradation.
+- **Prompt management & optimization**: versioned prompt registry, A/B comparison against benchmarks, iterative optimization using evaluation feedback, 5 built-in templates, 10th benchmark.
 
 ---
 
@@ -502,6 +503,64 @@ for step in workflow:
         raise BudgetExceededError(result.reason)
 ```
 
+### Prompt Management & Optimization (v0.9)
+
+Versioned prompt registry with A/B comparison and iterative optimization — integrated with the evaluation framework so prompt changes can be measured against benchmarks.
+
+```bash
+# List all registered prompts
+agentops prompt list
+
+# Register a new prompt
+agentops prompt register --name "support-agent" --content "You are a support agent for {{product}}. Follow: 1. Search docs 2. Cite sources 3. Verify facts." --category task
+
+# Create a new version
+agentops prompt update --name "support-agent" --content "..." --changelog "Added safety and quality rules"
+
+# Show diff between versions
+agentops prompt diff --name "support-agent" --from 1
+
+# A/B compare two prompt versions against benchmarks
+agentops prompt compare --prompt "support-agent" --version-a 1 --version-b 2 --benchmarks support-tickets,systems-quality
+
+# Iteratively optimize a prompt
+agentops prompt optimize --prompt "verification-check" --max-iter 5 --target 0.85
+
+# Render a prompt with variables
+agentops prompt render --name "support-agent" --vars '{"product":"CloudDeploy"}'
+```
+
+**5 built-in prompt templates** (reliability-agent-system, support-ticket-triage, verification-check, chain-of-thought-reasoning, tool-use-decision) with variable interpolation and version history.
+
+**Prompt comparison**: A/B test any two prompt versions against benchmarks — deterministic simulated comparison for CI safety, with per-metric delta reporting and winner confidence scoring.
+
+**Prompt optimization**: Iterative improvement loop using evaluation metrics — targets the lowest-scoring dimension each iteration with targeted refinements. Tracks score progression and improvement deltas.
+
+**10th benchmark — `prompt-engineering`**: 5 tasks testing prompt variant quality across retrieval, multi-step, verification, and tool-use categories.
+
+```python
+from agentops.prompts import PromptRegistry, create_comparator, create_optimizer
+from agentops.prompts.state import ComparisonConfig
+
+reg = PromptRegistry()
+v1 = reg.register("Be helpful. Use {{docs}}.", name="my-prompt")
+v2 = reg.update("my-prompt", "You are an expert. Use ONLY {{docs}}. Cite sources.")
+
+# A/B compare
+comp = create_comparator()
+config = ComparisonConfig(prompt_name="my-prompt", version_a=1, version_b=2)
+result = comp.compare(config, v1.content, v2.content)
+print(result.to_markdown())
+
+# Optimize
+opt = create_optimizer()
+result = opt.optimize("my-prompt", v2.content, max_iterations=5)
+print(f"Best iteration: {result.best_iteration}, improvement: {result.improvement}")
+
+# Persist
+reg.save("prompts.json")
+```
+
 ---
 
 ## Roadmap
@@ -514,6 +573,7 @@ for step in workflow:
 - [x] Guardrails & safety evaluation — prompt injection, content moderation, tool misuse detection, 3 profiles, 5-task benchmark, 58 tests
 - [x] Regression testing — baseline persistence, CI-friendly regression checks, per-metric thresholds, deterministic simulated agent (v0.7)
 - [x] LLM-as-Judge evaluation — multi-dimensional quality assessment, model comparison framework, Pareto analysis, 9th benchmark (v0.8)
+- [x] Prompt management & optimization — versioned registry, A/B comparison, iterative optimization, 5 templates, 10th benchmark (v0.9)
 - [ ] Streaming verification (partial response checking)
 - [ ] Web dashboard for trace exploration
 - [ ] Integration tests with local LLM (Ollama) for CI reproducibility

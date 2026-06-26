@@ -14,4 +14,4 @@ Designed to bridge the gap between research prototypes and production
 agent systems by making observability and evaluation first-class concerns.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.9.0"

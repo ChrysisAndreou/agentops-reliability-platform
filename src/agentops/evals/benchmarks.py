@@ -491,6 +491,80 @@ JUDGE_EVAL_BENCH = ReliabilityBenchmark(
     ],
 )
 
+# ── Prompt Engineering Benchmark ─────────────────────────────────────
+# 10th benchmark: tests prompt variant quality across different
+# instruction styles, templates, and optimization strategies
+
+PROMPT_ENGINEERING_BENCH = ReliabilityBenchmark(
+    name="prompt-engineering",
+    description="Prompt variant quality evaluation — tests different instruction styles, templates, and optimization strategies",
+    tasks=[
+        BenchmarkTask(
+            id="pe-001",
+            question=(
+                "A user reports their build failed with 'Docker daemon not available'. "
+                "They are on the Dedicated plan and recently updated their clouddeploy.yml. "
+                "What should they check? Provide specific steps with citations."
+            ),
+            category="retrieval",
+            key_terms=["runtime", "docker", "Dedicated", "pipeline settings", "citations", "steps"],
+            expected_sources=["clouddeploy-platform.md"],
+            difficulty="easy",
+        ),
+        BenchmarkTask(
+            id="pe-002",
+            question=(
+                "Compare the Shared, Dedicated, and Enterprise plans. What are the key "
+                "differences in resources, features, and pricing? Create a structured "
+                "comparison table with citations for each claim."
+            ),
+            category="multi_step",
+            key_terms=["Shared", "Dedicated", "Enterprise", "comparison", "table", "pricing"],
+            expected_sources=["clouddeploy-platform.md", "clouddeploy-onboarding.md"],
+            difficulty="medium",
+        ),
+        BenchmarkTask(
+            id="pe-003",
+            question=(
+                "A production deployment was automatically rolled back from v3.7.2 to v3.7.1. "
+                "The health check at /health returned 503 after 30 seconds. Provide a blameless "
+                "postmortem analysis covering root cause, prevention, and monitoring improvements. "
+                "Use the standard postmortem template."
+            ),
+            category="verification",
+            key_terms=["health check", "503", "auto-rollback", "postmortem", "monitoring"],
+            expected_sources=["clouddeploy-platform.md"],
+            difficulty="hard",
+        ),
+        BenchmarkTask(
+            id="pe-004",
+            question=(
+                "I need to set up a CI/CD pipeline for a Python microservice that uses Docker. "
+                "It needs to run tests, build an image, and deploy to a staging environment. "
+                "What does my clouddeploy.yml look like and what plan do I need? Include "
+                "a complete YAML example."
+            ),
+            category="tool_use",
+            key_terms=["pipeline", "Docker", "test", "build", "deploy", "clouddeploy.yml", "YAML"],
+            expected_sources=["clouddeploy-onboarding.md", "clouddeploy-platform.md"],
+            difficulty="medium",
+        ),
+        BenchmarkTask(
+            id="pe-005",
+            question=(
+                "What encryption standards does CloudDeploy use for data in transit and at rest? "
+                "Are there any compliance certifications? What is the data retention policy? "
+                "Organize your answer by: Transport Security, Storage Security, Compliance, "
+                "and Data Retention."
+            ),
+            category="retrieval",
+            key_terms=["TLS 1.3", "AES-256", "encryption", "GDPR", "SOC 2", "data retention"],
+            expected_sources=["clouddeploy-security.md", "clouddeploy-platform.md"],
+            difficulty="medium",
+        ),
+    ],
+)
+
 # ── Registry ────────────────────────────────────────────────────────
 
 ALL_BENCHMARKS = [
@@ -503,6 +577,7 @@ ALL_BENCHMARKS = [
     MULTI_AGENT_BENCH,
     GUARDRAILS_BENCH,
     JUDGE_EVAL_BENCH,
+    PROMPT_ENGINEERING_BENCH,
 ]
 
 BENCHMARK_MAP: dict[str, ReliabilityBenchmark] = {b.name: b for b in ALL_BENCHMARKS}
