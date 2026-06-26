@@ -17,8 +17,10 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: benchmark runners with groundedness, citation precision, verification pass rate, and latency metrics.
-- **Failure classification**: automatic pattern detection for hallucination, retrieval gaps, tool errors, and verification failures.
+- **Systematic evaluation**: 6 benchmarks (30 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
+- **Failure classification**: automatic pattern detection for 8 failure modes.
+- **Cost & latency budget gates**: configurable per-run and per-step cost/latency limits with graceful degradation.
 
 ---
 
@@ -237,8 +239,11 @@ agentops-reliability-platform/
 │   │   └── engine.py      # Hybrid search engine
 │   ├── evals/             # Evaluation framework
 │   │   ├── metrics.py     # Groundedness, citation, verification metrics
-│   │   ├── benchmarks.py  # Benchmark task definitions (10 tasks)
-│   │   └── harness.py     # Evaluation runner + report generator
+│   │   ├── benchmarks.py  # 6 benchmark suites (30 tasks: retrieval, tool-use, multi-step, edge-cases, hallucination)
+│   │   ├── harness.py     # Evaluation runner + report generator
+│   │   ├── simulator.py   # Configurable simulated agent (4 profiles, deterministic, no API keys)
+│   │   ├── comparator.py  # A/B testing, regression detection, multi-profile comparison
+│   │   └── budget.py      # Cost and latency budget gates with graceful enforcement
 │   ├── tracing/           # Trace persistence and failure analysis
 │   │   ├── store.py       # SQLite trace store
 │   │   ├── classifier.py  # 8-pattern failure taxonomy
@@ -250,7 +255,7 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 19 pytest tests
+├── tests/                 # 89 pytest tests (core, OTEL, simulator, comparator, budget gates)
 ├── docker/                # Dockerfile + docker-compose
 ├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
@@ -268,13 +273,69 @@ agentops-reliability-platform/
 
 ---
 
+### Evaluation Benchmarks & Simulator (v0.4)
+
+Run the full evaluation pipeline without API keys using the configurable simulated agent:
+
+```bash
+# List all 6 benchmarks
+agentops benchmarks
+
+# Run all benchmarks with production-quality simulated agent
+agentops simulate --profile production --output eval_results/
+
+# Run a specific benchmark
+agentops simulate --benchmark tool-use --profile development
+
+# A/B compare two agent configurations
+agentops compare --benchmark tool-use --profile-a production --profile-b development
+```
+
+**4 simulation profiles** (perfect, production, development, unreliable) with tunable groundedness, verification rate, hallucination rate, and latency. All runs are deterministic by task ID — same input produces same result.
+
+```python
+from agentops.evals.simulator import SimulatedAgent, PRODUCTION_AGENT
+from agentops.evals.harness import EvalHarness
+
+agent = SimulatedAgent(config=PRODUCTION_AGENT, seed=42)
+harness = EvalHarness(agent=agent, model="sim-production")
+report = await harness.run_benchmark(benchmark)
+print(report.to_markdown())
+```
+
+**30 evaluation tasks** across 6 benchmarks:
+- `support-tickets` (5 tasks) — Resolve CloudDeploy support tickets
+- `systems-quality` (5 tasks) — Evaluate reliability/quality characteristics
+- `tool-use` (5 tasks) — Test tool-calling correctness and error handling
+- `multi-step` (5 tasks) — Chain multiple retrieval and reasoning steps
+- `edge-cases` (5 tasks) — Robustness against ambiguous/adversarial inputs
+- `hallucination-resistance` (5 tasks) — Test tendency to fabricate when docs are silent
+
+### Budget Gates
+
+```python
+from agentops.evals.budget import BudgetState, BudgetGate, NORMAL_BUDGET
+
+state = BudgetState(cost_budget=NORMAL_BUDGET)
+state.start()
+
+for step in workflow:
+    state.record_step(input_tokens=500, output_tokens=200, latency_ms=5000)
+    result = gate.check(state)
+    if not result.allowed:
+        raise BudgetExceededError(result.reason)
+```
+
+---
+
 ## Roadmap
 
 - [x] Kubernetes Deployment — production-grade manifests with HPA, TLS, network policies, Terraform
 - [x] OpenTelemetry trace export for production observability — OTLP spans + metrics to Jaeger/Grafana/Honeycomb
+- [x] Evaluation benchmark suite — 6 benchmarks, 30 tasks, simulated agent, comparative A/B testing, regression detection
+- [x] Cost and latency budget gates — configurable per-run and per-step budgets with graceful enforcement
 - [ ] Multi-agent coordination tracing
 - [ ] Streaming verification (partial response checking)
-- [ ] Cost and latency budget gates
 - [ ] Web dashboard for trace exploration
 - [ ] Integration tests with local LLM (Ollama) for CI reproducibility
 

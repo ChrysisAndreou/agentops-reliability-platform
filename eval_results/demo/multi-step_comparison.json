@@ -1,0 +1,302 @@
+{
+  "perfect": {
+    "summary": {
+      "groundedness": 1.0,
+      "citation_precision": 0.0,
+      "verification_pass_rate": 1.0,
+      "composite": 0.7665
+    },
+    "per_task": [
+      {
+        "run_id": "ms-001",
+        "task_id": "ms-001",
+        "groundedness": 1.0,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 1000.0,
+        "latency_score": 0.992,
+        "composite": 0.749
+      },
+      {
+        "run_id": "ms-002",
+        "task_id": "ms-002",
+        "groundedness": 1.0,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.2,
+        "latency_ms": 1000.0,
+        "latency_score": 0.992,
+        "composite": 0.759
+      },
+      {
+        "run_id": "ms-003",
+        "task_id": "ms-003",
+        "groundedness": 1.0,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.333,
+        "latency_ms": 1000.0,
+        "latency_score": 0.992,
+        "composite": 0.766
+      },
+      {
+        "run_id": "ms-004",
+        "task_id": "ms-004",
+        "groundedness": 1.0,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.6,
+        "latency_ms": 1000.0,
+        "latency_score": 0.992,
+        "composite": 0.779
+      },
+      {
+        "run_id": "ms-005",
+        "task_id": "ms-005",
+        "groundedness": 1.0,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.6,
+        "latency_ms": 1000.0,
+        "latency_score": 0.992,
+        "composite": 0.779
+      }
+    ]
+  },
+  "production": {
+    "summary": {
+      "groundedness": 0.8667,
+      "citation_precision": 0.0,
+      "verification_pass_rate": 0.8,
+      "composite": 0.6731
+    },
+    "per_task": [
+      {
+        "run_id": "ms-001",
+        "task_id": "ms-001",
+        "groundedness": 0.867,
+        "citation_precision": 0.0,
+        "verification_passed": false,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 1839.5,
+        "latency_score": 0.985,
+        "composite": 0.458
+      },
+      {
+        "run_id": "ms-002",
+        "task_id": "ms-002",
+        "groundedness": 0.867,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.2,
+        "latency_ms": 2016.6,
+        "latency_score": 0.983,
+        "composite": 0.718
+      },
+      {
+        "run_id": "ms-003",
+        "task_id": "ms-003",
+        "groundedness": 0.867,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.333,
+        "latency_ms": 3254.8,
+        "latency_score": 0.973,
+        "composite": 0.724
+      },
+      {
+        "run_id": "ms-004",
+        "task_id": "ms-004",
+        "groundedness": 0.867,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.4,
+        "latency_ms": 2658.1,
+        "latency_score": 0.978,
+        "composite": 0.728
+      },
+      {
+        "run_id": "ms-005",
+        "task_id": "ms-005",
+        "groundedness": 0.867,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.6,
+        "latency_ms": 3478.8,
+        "latency_score": 0.971,
+        "composite": 0.737
+      }
+    ]
+  },
+  "development": {
+    "summary": {
+      "groundedness": 0.7242,
+      "citation_precision": 0.0,
+      "verification_pass_rate": 0.8,
+      "composite": 0.6264
+    },
+    "per_task": [
+      {
+        "run_id": "ms-001",
+        "task_id": "ms-001",
+        "groundedness": 0.733,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 1999.0,
+        "latency_score": 0.983,
+        "composite": 0.668
+      },
+      {
+        "run_id": "ms-002",
+        "task_id": "ms-002",
+        "groundedness": 0.688,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.2,
+        "latency_ms": 1584.8,
+        "latency_score": 0.987,
+        "composite": 0.665
+      },
+      {
+        "run_id": "ms-003",
+        "task_id": "ms-003",
+        "groundedness": 0.733,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.167,
+        "latency_ms": 4719.4,
+        "latency_score": 0.961,
+        "composite": 0.674
+      },
+      {
+        "run_id": "ms-004",
+        "task_id": "ms-004",
+        "groundedness": 0.733,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.6,
+        "latency_ms": 4433.0,
+        "latency_score": 0.963,
+        "composite": 0.696
+      },
+      {
+        "run_id": "ms-005",
+        "task_id": "ms-005",
+        "groundedness": 0.733,
+        "citation_precision": 0.0,
+        "verification_passed": false,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.2,
+        "latency_ms": 2355.6,
+        "latency_score": 0.98,
+        "composite": 0.428
+      }
+    ]
+  },
+  "unreliable": {
+    "summary": {
+      "groundedness": 0.4667,
+      "citation_precision": 0.0,
+      "verification_pass_rate": 0.6,
+      "composite": 0.4851
+    },
+    "per_task": [
+      {
+        "run_id": "ms-001",
+        "task_id": "ms-001",
+        "groundedness": 0.467,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 4042.2,
+        "latency_score": 0.966,
+        "composite": 0.587
+      },
+      {
+        "run_id": "ms-002",
+        "task_id": "ms-002",
+        "groundedness": 0.467,
+        "citation_precision": 0.0,
+        "verification_passed": false,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 6736.3,
+        "latency_score": 0.944,
+        "composite": 0.334
+      },
+      {
+        "run_id": "ms-003",
+        "task_id": "ms-003",
+        "groundedness": 0.467,
+        "citation_precision": 0.0,
+        "verification_passed": false,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 3403.9,
+        "latency_score": 0.972,
+        "composite": 0.337
+      },
+      {
+        "run_id": "ms-004",
+        "task_id": "ms-004",
+        "groundedness": 0.467,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 7861.7,
+        "latency_score": 0.934,
+        "composite": 0.583
+      },
+      {
+        "run_id": "ms-005",
+        "task_id": "ms-005",
+        "groundedness": 0.467,
+        "citation_precision": 0.0,
+        "verification_passed": true,
+        "tool_success_rate": 1.0,
+        "tool_calls_count": 0,
+        "answer_completeness": 0.0,
+        "latency_ms": 7583.8,
+        "latency_score": 0.937,
+        "composite": 0.584
+      }
+    ]
+  }
+}

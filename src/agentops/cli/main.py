@@ -324,5 +324,123 @@ def index(
             print(f"  [{r.chunk_id}] score={r.score:.3f} ({r.retrieval_method})")
 
 
+@app.command()
+def simulate(
+    benchmark: str = typer.Option("all", "--benchmark", "-b", help="Benchmark name or 'all'"),
+    profile: str = typer.Option("production", "--profile", "-p", help="Agent profile: perfect, production, development, unreliable"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+):
+    """Run evaluation benchmarks with a simulated agent (no API keys needed)."""
+    from agentops.evals.benchmarks import ALL_BENCHMARKS, get_benchmark, list_benchmarks
+    from agentops.evals.harness import EvalHarness
+    from agentops.evals.simulator import get_profile
+    from agentops.tracing.store import TraceStore
+
+    sim_config = get_profile(profile)
+    if sim_config is None:
+        print(f"Profile '{profile}' not found. Available: perfect, production, development, unreliable")
+        raise typer.Exit(1)
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    out = Path(output_dir) if output_dir else d / "eval_results"
+    out.mkdir(parents=True, exist_ok=True)
+
+    async def _run():
+        trace_store = TraceStore(str(out / "sim_traces.db"))
+        harness = EvalHarness(agent=None, trace_store=trace_store, model=f"sim-{profile}", output_dir=str(out))
+
+        benchmarks_to_run = ALL_BENCHMARKS if benchmark == "all" else [get_benchmark(benchmark)]
+        benchmarks_to_run = [b for b in benchmarks_to_run if b is not None]
+
+        if not benchmarks_to_run:
+            print(f"No benchmarks found. Available: {[b['name'] for b in list_benchmarks()]}")
+            raise typer.Exit(1)
+
+        print(f"Profile: {sim_config.name} — {sim_config.description}")
+        print(f"Benchmarks: {len(benchmarks_to_run)}")
+        print()
+
+        all_summaries = []
+        for bench in benchmarks_to_run:
+            report = await harness.run_with_simulator(bench, sim_config=sim_config)
+            all_summaries.append(report.summary)
+            print(f"  {bench.name}: composite={report.summary.get('composite_mean', 0):.3f}, "
+                  f"verify_rate={report.summary.get('verification_pass_rate', 0):.1%}")
+
+        print(f"\nReports written to: {out}")
+
+        # Write aggregate summary
+        if len(all_summaries) > 1:
+            lines = ["# Aggregate Simulation Summary", f"Profile: {sim_config.name}", ""]
+            lines.append("| Benchmark | Tasks | Composite | Verify Rate | Grounded | Latency |")
+            lines.append("|-----------|-------|-----------|-------------|----------|---------|")
+            for bench, summary in zip(benchmarks_to_run, all_summaries):
+                lines.append(
+                    f"| {bench.name} | {len(bench.tasks)} | {summary.get('composite_mean', 0):.3f} | "
+                    f"{summary.get('verification_pass_rate', 0):.1%} | "
+                    f"{summary.get('groundedness_mean', 0):.3f} | "
+                    f"{summary.get('avg_latency_ms', 0):.0f}ms |"
+                )
+            (out / "aggregate_summary.md").write_text("\n".join(lines))
+
+    asyncio.run(_run())
+
+
+@app.command()
+def compare(
+    benchmark: str = typer.Option(..., "--benchmark", "-b", help="Benchmark name to compare on"),
+    profile_a: str = typer.Option("production", "--profile-a", "-a", help="First agent profile"),
+    profile_b: str = typer.Option("development", "--profile-b", "-c", help="Second agent profile"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+):
+    """A/B compare two agent configurations on a benchmark."""
+    from agentops.evals.benchmarks import get_benchmark
+    from agentops.evals.simulator import get_profile
+    from agentops.evals.comparator import EvalComparator
+
+    config_a = get_profile(profile_a)
+    config_b = get_profile(profile_b)
+    if config_a is None or config_b is None:
+        print(f"Profile not found. Available: perfect, production, development, unreliable")
+        raise typer.Exit(1)
+
+    bench = get_benchmark(benchmark)
+    if bench is None:
+        print(f"Benchmark '{benchmark}' not found.")
+        raise typer.Exit(1)
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    out = Path(output_dir) if output_dir else d / "eval_results"
+
+    async def _run():
+        comparator = EvalComparator()
+        result = await comparator.compare(bench, config_a=config_a, config_b=config_b)
+        md = result.to_markdown()
+        print(md)
+
+        out.mkdir(parents=True, exist_ok=True)
+        report_path = out / f"compare_{bench.name}_{config_a.name}_vs_{config_b.name}.md"
+        report_path.write_text(md)
+        print(f"\nReport: {report_path}")
+
+    asyncio.run(_run())
+
+
+@app.command()
+def benchmarks():
+    """List available evaluation benchmarks."""
+    from agentops.evals.benchmarks import list_benchmarks
+
+    blist = list_benchmarks()
+    print(f"{'Name':<30} {'Tasks':<6} {'Categories':<40} {'Difficulties'}")
+    print("-" * 90)
+    for b in blist:
+        cats = ", ".join(b["categories"])
+        diffs = ", ".join(b["difficulties"])
+        print(f"{b['name']:<30} {b['task_count']:<6} {cats:<40} {diffs}")
+
+
 if __name__ == "__main__":
     app()

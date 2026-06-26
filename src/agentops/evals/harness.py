@@ -15,7 +15,7 @@ from typing import Any
 import pandas as pd
 
 from .metrics import ReliabilityMetrics, compute_metrics
-from .benchmarks import ReliabilityBenchmark, BenchmarkTask, ALL_BENCHMARKS
+from .benchmarks import ReliabilityBenchmark, BenchmarkTask, ALL_BENCHMARKS, BENCHMARK_MAP
 from ..tracing.store import TraceStore
 from ..tracing.classifier import FailureClassifier
 
@@ -116,7 +116,14 @@ class EvalHarness:
             results.append(metrics)
             traces_for_analysis.append(result)
 
-        # Compute summary
+        return self._build_report(benchmark, results, traces_for_analysis)
+
+    def _build_report(
+        self,
+        benchmark: ReliabilityBenchmark,
+        results: list[ReliabilityMetrics],
+        traces_for_analysis: list,
+    ) -> EvalReport:
         composites = [r.composite for r in results]
         groundedness_vals = [r.groundedness for r in results]
         citation_vals = [r.citation_precision for r in results]
@@ -169,6 +176,30 @@ class EvalHarness:
             reports.append(report)
 
         return reports
+
+    async def run_with_simulator(
+        self,
+        benchmark: ReliabilityBenchmark,
+        sim_config=None,
+    ) -> EvalReport:
+        """Run benchmark with a simulated agent (no API keys needed)."""
+        from .simulator import SimulatedAgent, PRODUCTION_AGENT
+
+        if sim_config is None:
+            sim_config = PRODUCTION_AGENT
+
+        sim_agent = SimulatedAgent(config=sim_config, seed=42)
+        results = []
+        traces_for_analysis = []
+
+        for task in benchmark.tasks:
+            result = await sim_agent.run(task.question, task_id=task.id)
+            self.trace_store.save(result)
+            metrics = compute_metrics(result, key_terms=task.key_terms)
+            results.append(metrics)
+            traces_for_analysis.append(result)
+
+        return self._build_report(benchmark, results, traces_for_analysis)
 
     def dry_run(self, benchmark: ReliabilityBenchmark) -> list[dict[str, Any]]:
         """Run benchmark without LLM calls — validates structure only."""

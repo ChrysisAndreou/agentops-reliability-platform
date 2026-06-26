@@ -1,0 +1,106 @@
+{
+  "benchmark_name": "edge-cases",
+  "model": "sim-production",
+  "total_tasks": 5,
+  "summary": {
+    "composite_mean": 0.715,
+    "composite_std": 0.01,
+    "groundedness_mean": 0.855,
+    "citation_precision_mean": 0.0,
+    "verification_pass_rate": 1.0,
+    "avg_latency_ms": 2494.5,
+    "total_tool_calls": 0,
+    "tasks_evaluated": 5
+  },
+  "failure_patterns": [
+    {
+      "name": "hallucination",
+      "description": "Agent produced claims not grounded in retrieved evidence",
+      "count": 5,
+      "severity": "critical",
+      "examples": [
+        "ec-001",
+        "ec-002",
+        "ec-003"
+      ]
+    },
+    {
+      "name": "retrieval_gap",
+      "description": "No relevant chunks retrieved for the query",
+      "count": 5,
+      "severity": "high",
+      "examples": [
+        "ec-001",
+        "ec-002",
+        "ec-003"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "run_id": "ec-001",
+      "task_id": "ec-001",
+      "groundedness": 0.875,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.2,
+      "latency_ms": 2036.2,
+      "latency_score": 0.983,
+      "composite": 0.721
+    },
+    {
+      "run_id": "ec-002",
+      "task_id": "ec-002",
+      "groundedness": 0.846,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.0,
+      "latency_ms": 2816.5,
+      "latency_score": 0.977,
+      "composite": 0.701
+    },
+    {
+      "run_id": "ec-003",
+      "task_id": "ec-003",
+      "groundedness": 0.867,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.4,
+      "latency_ms": 2288.0,
+      "latency_score": 0.981,
+      "composite": 0.728
+    },
+    {
+      "run_id": "ec-004",
+      "task_id": "ec-004",
+      "groundedness": 0.818,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.5,
+      "latency_ms": 3419.4,
+      "latency_score": 0.972,
+      "composite": 0.718
+    },
+    {
+      "run_id": "ec-005",
+      "task_id": "ec-005",
+      "groundedness": 0.867,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.0,
+      "latency_ms": 1912.4,
+      "latency_score": 0.984,
+      "composite": 0.708
+    }
+  ]
+}
