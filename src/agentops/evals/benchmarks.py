@@ -339,6 +339,57 @@ HALLUCINATION_BENCH = ReliabilityBenchmark(
 )
 
 
+# ── Multi-Agent Coordination Benchmark ────────────────────────────────
+
+MULTI_AGENT_BENCH = ReliabilityBenchmark(
+    name="multi-agent",
+    description="Evaluate supervisor-worker multi-agent coordination, decomposition, and result aggregation",
+    tasks=[
+        BenchmarkTask(
+            id="ma-001",
+            question="A customer reports their CloudDeploy deployment pipeline is failing with multiple errors: (1) build agent OOM on a Java monolith, (2) TLS certificate expired on the staging environment, and (3) a database migration failed because the migration script referenced a dropped column. Diagnose each issue separately, recommend fixes, and then synthesize a comprehensive incident response plan.",
+            category="multi_step",
+            key_terms=["OOM", "TLS", "certificate", "migration", "incident response", "Dedicated", "rolling", "rollback"],
+            expected_sources=["clouddeploy-platform.md", "clouddeploy-security.md", "clouddeploy-onboarding.md"],
+            difficulty="hard",
+        ),
+        BenchmarkTask(
+            id="ma-002",
+            question="A 50-developer organization is evaluating CloudDeploy for their migration from Jenkins. They need: (A) cost analysis comparing Shared vs Dedicated vs Enterprise tiers for 50 developers across 12 microservices, (B) security compliance assessment (encryption, access control, audit logging), (C) deployment strategy recommendation for zero-downtime releases. Each analysis should be done independently, then synthesized into a unified recommendation.",
+            category="multi_step",
+            key_terms=["50 developers", "12 microservices", "cost analysis", "security compliance", "zero-downtime", "blue-green", "AES-256"],
+            expected_sources=["clouddeploy-platform.md", "clouddeploy-security.md"],
+            requires_tool=True,
+            difficulty="hard",
+        ),
+        BenchmarkTask(
+            id="ma-003",
+            question="A security incident requires investigation across three domains: (1) API token scope analysis — which tokens have overly broad permissions, (2) deployment audit — were any unauthorized deployments made in the last 72 hours, (3) network policy review — are all services correctly firewalled. For each domain, provide findings and then synthesize a security posture report with prioritized remediation steps.",
+            category="multi_step",
+            key_terms=["API token", "scope", "audit", "unauthorized", "network policy", "firewall", "remediation"],
+            expected_sources=["clouddeploy-security.md", "clouddeploy-onboarding.md", "clouddeploy-platform.md"],
+            difficulty="hard",
+        ),
+        BenchmarkTask(
+            id="ma-004",
+            question="Design a complete CI/CD architecture for a regulated fintech application on CloudDeploy. Requirements: (A) infrastructure — build agent sizing, environment strategy (dev/staging/prod), (B) security — secret management, encrypted artifacts, access controls, (C) compliance — audit trail, approval gates, deployment freeze windows, (D) reliability — health checks, auto-rollback, incident response. Each domain should be analyzed by a specialist, then integrated into one architecture document.",
+            category="multi_step",
+            key_terms=["fintech", "regulated", "CI/CD", "secrets", "audit trail", "approval gates", "health checks", "auto-rollback"],
+            expected_sources=["clouddeploy-platform.md", "clouddeploy-security.md", "clouddeploy-onboarding.md"],
+            difficulty="hard",
+        ),
+        BenchmarkTask(
+            id="ma-005",
+            question="CloudDeploy experienced a cascading failure: (1) a Shared build agent OOM caused a queue backlog, (2) queued builds timed out and triggered false-positive alerts, (3) the alerts paged the on-call engineer who manually rolled back a healthy production deployment by mistake. Perform root cause analysis across the technical (build agent), operational (alerting), and human-factors (on-call procedure) domains. Synthesize into a blameless postmortem with concrete preventive measures.",
+            category="multi_step",
+            key_terms=["cascading failure", "OOM", "queue backlog", "false-positive", "rollback", "blameless postmortem", "root cause"],
+            expected_sources=["clouddeploy-platform.md", "clouddeploy-security.md"],
+            difficulty="hard",
+        ),
+    ],
+)
+
+
 # ── All benchmarks ──────────────────────────────────────────────────
 
 ALL_BENCHMARKS = [
@@ -348,6 +399,7 @@ ALL_BENCHMARKS = [
     MULTI_STEP_BENCH,
     EDGE_CASE_BENCH,
     HALLUCINATION_BENCH,
+    MULTI_AGENT_BENCH,
 ]
 
 BENCHMARK_MAP: dict[str, ReliabilityBenchmark] = {b.name: b for b in ALL_BENCHMARKS}

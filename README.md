@@ -17,8 +17,9 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 6 benchmarks (30 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Systematic evaluation**: 7 benchmarks (35 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
+- **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
 - **Failure classification**: automatic pattern detection for 8 failure modes.
 - **Cost & latency budget gates**: configurable per-run and per-step cost/latency limits with graceful degradation.
 
@@ -244,7 +245,7 @@ agentops-reliability-platform/
 │   │   ├── simulator.py   # Configurable simulated agent (4 profiles, deterministic, no API keys)
 │   │   ├── comparator.py  # A/B testing, regression detection, multi-profile comparison
 │   │   └── budget.py      # Cost and latency budget gates with graceful enforcement
-│   ├── tracing/           # Trace persistence and failure analysis
+│   ├── multi_agent/        # Multi-agent coordination (v0.5)\n│   │   ├── state.py        # MultiAgentState, WorkerAssignment, InterAgentMessage\n│   │   ├── topology.py     # Supervisor-worker LangGraph topology\n│   │   └── coordinator.py  # Orchestrator + trace store extensions\n│   ├── tracing/            # Trace persistence and failure analysis
 │   │   ├── store.py       # SQLite trace store
 │   │   ├── classifier.py  # 8-pattern failure taxonomy
 │   │   └── opentelemetry.py  # OTLP span/metric export (optional)
@@ -268,7 +269,7 @@ agentops-reliability-platform/
 
 - **LLM-dependent verification**: The verifier uses another LLM call, adding latency and cost. This is intentional — a human-in-the-loop equivalent is impractical for every agent query, and the verifier catches hallucinations the executor misses.
 - **SQLite, not distributed traces**: SQLite keeps the system zero-infra and portable. For production deployment, swap to OpenTelemetry + a columnar store.
-- **Single-agent focus**: The platform targets individual tool-using agents. Multi-agent coordination tracing is a future direction.
+- **Single-agent + multi-agent**: The platform supports both individual tool-using agents and supervisor-worker multi-agent coordination with full tracing.
 - **Synthetic documentation**: The sample data is fictional (CloudDeploy) to avoid licensing issues. Replace with real docs for production use.
 
 ---
@@ -303,13 +304,44 @@ report = await harness.run_benchmark(benchmark)
 print(report.to_markdown())
 ```
 
-**30 evaluation tasks** across 6 benchmarks:
+**35 evaluation tasks** across 7 benchmarks:
 - `support-tickets` (5 tasks) — Resolve CloudDeploy support tickets
 - `systems-quality` (5 tasks) — Evaluate reliability/quality characteristics
 - `tool-use` (5 tasks) — Test tool-calling correctness and error handling
 - `multi-step` (5 tasks) — Chain multiple retrieval and reasoning steps
 - `edge-cases` (5 tasks) — Robustness against ambiguous/adversarial inputs
 - `hallucination-resistance` (5 tasks) — Test tendency to fabricate when docs are silent
+- `multi-agent` (5 tasks) — Supervisor-worker coordination, task decomposition, and result aggregation
+
+### Multi-Agent Coordination (v0.5)
+
+Supervisor-worker topology for complex tasks requiring decomposition across specialized agents:
+
+```bash
+# Run a complex task with multi-agent decomposition
+agentops run-multi "Diagnose three simultaneous deployment failures and produce an incident response plan"
+
+# Evaluate multi-agent coordination benchmarks
+agentops eval-multi --benchmark multi-agent --profile production
+
+# A/B compare coordinator profiles
+agentops eval-multi --profile production --output eval_results/
+```
+
+**Worker roles**: retrieval specialist, tool executor, code analyst, verifier — each runs the existing reliability graph independently. The supervisor decomposes, routes, aggregates, and verifies across workers. Full inter-agent message tracing and coordination metrics.
+
+```python
+from agentops.multi_agent import MultiAgentCoordinator, MultiAgentConfig
+
+worker_fn = MultiAgentCoordinator.make_simulated_worker_fn("production")
+config = MultiAgentConfig(model="gpt-4o")
+coordinator = MultiAgentCoordinator(worker_fn=worker_fn, config=config)
+
+result = await coordinator.run(
+    "Analyze security posture, compute deployment costs, and recommend architecture"
+)
+print(f"Workers: {result.worker_count}, Verified: {result.verification_passed}")
+```
 
 ### Budget Gates
 
@@ -334,7 +366,7 @@ for step in workflow:
 - [x] OpenTelemetry trace export for production observability — OTLP spans + metrics to Jaeger/Grafana/Honeycomb
 - [x] Evaluation benchmark suite — 6 benchmarks, 30 tasks, simulated agent, comparative A/B testing, regression detection
 - [x] Cost and latency budget gates — configurable per-run and per-step budgets with graceful enforcement
-- [ ] Multi-agent coordination tracing
+- [x] Multi-agent coordination tracing — supervisor-worker topology, inter-agent message tracing, coordination metrics, 5-task benchmark
 - [ ] Streaming verification (partial response checking)
 - [ ] Web dashboard for trace exploration
 - [ ] Integration tests with local LLM (Ollama) for CI reproducibility

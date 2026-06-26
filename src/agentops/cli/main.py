@@ -442,5 +442,218 @@ def benchmarks():
         print(f"{b['name']:<30} {b['task_count']:<6} {cats:<40} {diffs}")
 
 
+# ── Multi-Agent Commands ──────────────────────────────────────────────
+
+@app.command()
+def run_multi(
+    task: str = typer.Argument(..., help="Complex task for the multi-agent system"),
+    model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model for supervisor"),
+    profile: str = typer.Option("production", "--profile", "-p", help="Worker agent profile: perfect, production, development, unreliable"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Run a multi-agent supervisor-worker workflow on a complex task.
+
+    The supervisor decomposes the task, routes subtasks to specialized
+    worker agents, and synthesizes a unified answer. Uses simulated
+    workers for demo/evaluation without API keys.
+    """
+    from agentops.multi_agent import (
+        MultiAgentCoordinator,
+        MultiAgentConfig,
+        DEFAULT_WORKER_ROLES,
+    )
+
+    worker_fn = MultiAgentCoordinator.make_simulated_worker_fn(profile_name=profile)
+    config = MultiAgentConfig(model=model, worker_roles=DEFAULT_WORKER_ROLES)
+    coordinator = MultiAgentCoordinator(worker_fn=worker_fn, config=config)
+
+    async def _run():
+        result = await coordinator.run(task=task)
+        return result
+
+    result = asyncio.run(_run())
+
+    if json_output:
+        print(json.dumps({
+            "run_id": result.run_id,
+            "task": result.task,
+            "subtasks": result.subtasks,
+            "worker_count": result.worker_count,
+            "verification_passed": result.verification_passed,
+            "final_answer": result.final_answer,
+            "grounded_claims": len(result.grounded_claims),
+            "ungrounded_claims": len(result.ungrounded_claims),
+            "total_latency_ms": result.total_latency_ms,
+            "coordination_trace": result.coordination_trace,
+        }, indent=2))
+    else:
+        print(f"\n{'='*70}")
+        print(f"Multi-Agent Run: {result.run_id}")
+        print(f"Task: {result.task}")
+        print(f"Decomposed into {len(result.subtasks)} subtask(s):")
+        for i, st in enumerate(result.subtasks, 1):
+            print(f"  {i}. {st[:120]}")
+        print(f"\nWorkers: {result.worker_count} | "
+              f"Verification: {'PASSED' if result.verification_passed else 'FAILED'} | "
+              f"Latency: {result.total_latency_ms:.0f}ms")
+        print(f"Grounded claims: {len(result.grounded_claims)} | "
+              f"Ungrounded: {len(result.ungrounded_claims)} | "
+              f"Citations: {len(result.citations_used)}")
+        print(f"\nCoordination trace ({len(result.coordination_trace)} phases):")
+        for entry in result.coordination_trace:
+            print(f"  [{entry.get('phase', '?')}] {entry.get('detail', '')[:120]}")
+        print(f"{'='*70}")
+        print(f"\n{result.final_answer[:2000]}\n")
+
+
+@app.command()
+def eval_multi(
+    benchmark: str = typer.Option("all", "--benchmark", "-b", help="Benchmark name or 'all'"),
+    model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model for supervisor"),
+    profile: str = typer.Option("production", "--profile", "-p", help="Worker agent profile"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+):
+    """Run multi-agent coordination benchmarks.
+
+    Evaluates the supervisor-worker topology against complex tasks
+    that require decomposition, specialized workers, and aggregation.
+    Uses simulated workers for CI-reproducible evaluation.
+    """
+    from agentops.evals.benchmarks import (
+        ALL_BENCHMARKS, get_benchmark, MULTI_AGENT_BENCH,
+        ReliabilityBenchmark, BenchmarkTask,
+    )
+    from agentops.evals.simulator import get_profile, SimulatedAgent
+    from agentops.multi_agent import (
+        MultiAgentCoordinator,
+        MultiAgentConfig,
+        MultiAgentRunResult,
+        DEFAULT_WORKER_ROLES,
+        save_multi_agent_run,
+    )
+    from agentops.tracing.store import TraceStore
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    out = Path(output_dir) if output_dir else d / "eval_results"
+    out.mkdir(parents=True, exist_ok=True)
+
+    sim_config = get_profile(profile)
+    if sim_config is None:
+        print(f"Profile '{profile}' not found. Available: perfect, production, development, unreliable")
+        raise typer.Exit(1)
+
+    # Select benchmarks
+    benchmarks_to_run = []
+    if benchmark == "all":
+        benchmarks_to_run = [MULTI_AGENT_BENCH]
+    elif benchmark == "multi-agent":
+        benchmarks_to_run = [MULTI_AGENT_BENCH]
+    else:
+        # Also check single-agent benchmarks (for reference)
+        bench = get_benchmark(benchmark)
+        if bench:
+            benchmarks_to_run = [bench]
+
+    if not benchmarks_to_run:
+        print(f"No multi-agent benchmarks found. Use 'multi-agent' or 'all'.")
+        raise typer.Exit(1)
+
+    worker_fn = MultiAgentCoordinator.make_simulated_worker_fn(profile_name=profile)
+    config = MultiAgentConfig(model=model, worker_roles=DEFAULT_WORKER_ROLES)
+
+    trace_store = TraceStore(str(out / "multi_traces.db"))
+
+    print(f"Multi-Agent Evaluation")
+    print(f"Profile: {sim_config.name} — {sim_config.description}")
+    print(f"Benchmarks: {len(benchmarks_to_run)}")
+    print()
+
+    all_results: list[MultiAgentRunResult] = []
+
+    async def _run():
+        for bench in benchmarks_to_run:
+            print(f"  {bench.name}: {len(bench.tasks)} tasks...")
+            bench_results = []
+            for task in bench.tasks:
+                coordinator = MultiAgentCoordinator(worker_fn=worker_fn, config=config)
+                result = await coordinator.run(
+                    task=task.question,
+                    context=f"Benchmark: {bench.name}, Category: {task.category}",
+                    run_id=f"multi-{bench.name}-{task.id}",
+                )
+                bench_results.append(result)
+                all_results.append(result)
+                status = "✓" if result.verification_passed else "✗"
+                print(f"    {task.id}: {status} verify={result.verification_passed} "
+                      f"workers={result.worker_count} grounded={len(result.grounded_claims)} "
+                      f"latency={result.total_latency_ms:.0f}ms")
+
+            # Save traces
+            for r in bench_results:
+                save_multi_agent_run(trace_store, r)
+
+        return all_results
+
+    results = asyncio.run(_run())
+
+    # Generate report
+    if results:
+        report_lines = [
+            f"# Multi-Agent Evaluation Report",
+            f"",
+            f"**Profile:** {sim_config.name} — {sim_config.description}",
+            f"**Benchmarks:** {len(benchmarks_to_run)}",
+            f"**Total tasks:** {len(results)}",
+            f"",
+            f"## Summary",
+            f"",
+            f"| Metric | Value |",
+            f"|--------|-------|",
+            f"| Tasks executed | {len(results)} |",
+            f"| Verification pass rate | {sum(1 for r in results if r.verification_passed) / max(len(results), 1):.1%} |",
+            f"| Avg workers per task | {sum(r.worker_count for r in results) / max(len(results), 1):.1f} |",
+            f"| Avg grounded claims | {sum(len(r.grounded_claims) for r in results) / max(len(results), 1):.1f} |",
+            f"| Avg latency (ms) | {sum(r.total_latency_ms for r in results) / max(len(results), 1):.0f} |",
+            f"",
+            f"## Task Results",
+            f"",
+            f"| Task ID | Verified | Workers | Grounded | Latency |",
+            f"|---------|----------|---------|----------|---------|",
+        ]
+
+        for r in results:
+            v = "✓" if r.verification_passed else "✗"
+            report_lines.append(
+                f"| {r.run_id} | {v} | {r.worker_count} | {len(r.grounded_claims)} | {r.total_latency_ms:.0f}ms |"
+            )
+
+        # Per-task details
+        report_lines.append("")
+        report_lines.append("## Per-Task Details")
+        for r in results:
+            report_lines.append(f"")
+            report_lines.append(f"### {r.run_id}")
+            report_lines.append(f"**Task:** {r.task[:200]}")
+            report_lines.append(f"**Verification:** {'PASSED' if r.verification_passed else 'FAILED'}")
+            report_lines.append(f"**Subtasks:** {len(r.subtasks)}")
+            for i, st in enumerate(r.subtasks, 1):
+                report_lines.append(f"  {i}. {st[:150]}")
+            report_lines.append(f"**Coordination trace:**")
+            for entry in r.coordination_trace:
+                report_lines.append(f"  - [{entry.get('phase', '?')}] {entry.get('detail', '')[:150]}")
+            report_lines.append(f"")
+            report_lines.append(f"**Final Answer:**")
+            report_lines.append(f"```")
+            report_lines.append(r.final_answer[:1000])
+            report_lines.append(f"```")
+
+        report_path = out / "multi_agent_report.md"
+        report_path.write_text("\n".join(report_lines))
+        print(f"\nReport: {report_path}")
+
+    trace_store.close()
+
+
 if __name__ == "__main__":
     app()
