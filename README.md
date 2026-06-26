@@ -64,6 +64,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 | **SQLite trace store** | Zero-infra persistence; queryable by verification status, task, and failure mode |
 | **Typed tool registry with replay** | Schema validation prevents bad tool calls; replay enables deterministic evaluation |
 | **Failure pattern taxonomy** | 8 classified failure modes for systematic improvement, not just "did it work?" |
+| **OpenTelemetry (optional)** | Production-grade observability via OTLP spans + metrics; disabled by default for zero overhead |
 
 ---
 
@@ -124,6 +125,53 @@ Endpoints:
 ```bash
 docker compose -f docker/docker-compose.yml up
 ```
+
+This starts both the AgentOps API server and a Jaeger collector for OpenTelemetry traces and metrics. Access the Jaeger UI at http://localhost:16686.
+
+### OpenTelemetry Observability
+
+AgentOps exports agent execution traces and metrics to any OTLP-compatible collector (Jaeger, Grafana Tempo, Honeycomb, Datadog, etc.).
+
+**Enable OTEL export:**
+
+```bash
+# Via CLI flag
+agentops run "How do I enable 2FA?" --otel
+
+# Via environment variable
+export AGENTOPS_OTEL_ENABLED=1
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+agentops serve --otel
+```
+
+**What gets exported:**
+
+| Signal | Contents |
+|--------|----------|
+| **Traces** | Parent span per agent run, child spans per step (plan, retrieve, execute, verify, respond). Span attributes carry task, verification status, grounded/ungrounded claims, tool counts, and latency. |
+| **Metrics** | `agentops.runs.total` (counter), `agentops.runs.verification_pass` (counter), `agentops.runs.failed` (counter), `agentops.latency_ms` (histogram), `agentops.step.latency_ms` (histogram), `agentops.retrieved_chunks` (histogram), `agentops.tool_calls` (histogram) |
+
+**Programmatic usage:**
+
+```python
+from agentops.tracing import OTelObserver
+from agentops.agent.implementations import ReliabilityAgent
+
+observer = OTelObserver(service_name="my-agentops")
+observer.start()
+
+agent = ReliabilityAgent(
+    tool_registry=registry,
+    retrieval_fn=my_retrieval,
+    otel_observer=observer,
+)
+result = await agent.run("What is the deployment strategy?")
+# Traces + metrics automatically exported to collector
+
+observer.shutdown()
+```
+
+OTEL is **disabled by default** — no overhead, no collector dependency. When `AGENTOPS_OTEL_ENABLED` is not set or `--otel` is not passed, the observer is a zero-cost no-op.
 
 ### Kubernetes
 
@@ -193,7 +241,8 @@ agentops-reliability-platform/
 │   │   └── harness.py     # Evaluation runner + report generator
 │   ├── tracing/           # Trace persistence and failure analysis
 │   │   ├── store.py       # SQLite trace store
-│   │   └── classifier.py  # 8-pattern failure taxonomy
+│   │   ├── classifier.py  # 8-pattern failure taxonomy
+│   │   └── opentelemetry.py  # OTLP span/metric export (optional)
 │   ├── api/               # FastAPI server
 │   │   └── app.py         # REST endpoints
 │   └── cli/               # CLI (Typer)
@@ -222,7 +271,7 @@ agentops-reliability-platform/
 ## Roadmap
 
 - [x] Kubernetes Deployment — production-grade manifests with HPA, TLS, network policies, Terraform
-- [ ] OpenTelemetry trace export for production observability
+- [x] OpenTelemetry trace export for production observability — OTLP spans + metrics to Jaeger/Grafana/Honeycomb
 - [ ] Multi-agent coordination tracing
 - [ ] Streaming verification (partial response checking)
 - [ ] Cost and latency budget gates

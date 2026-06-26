@@ -24,12 +24,13 @@ def _get_project_root() -> Path:
     return Path.cwd()
 
 
-async def _build_agent_from_dir(project_dir: Path, model: str = "gpt-4o"):
+async def _build_agent_from_dir(project_dir: Path, model: str = "gpt-4o", otel_enabled: bool = False):
     """Build a reliability agent from a project directory with sample data."""
     from agentops.agent.tool_registry import ToolRegistry, ToolDefinition
     from agentops.agent.implementations import ReliabilityAgent
     from agentops.retrieval.ingest import DocumentIngestor
     from agentops.retrieval.engine import RetrievalEngine
+    from agentops.tracing.opentelemetry import OTelObserver
 
     docs_dir = project_dir / "sample_data" / "docs"
     if not docs_dir.exists():
@@ -97,10 +98,18 @@ async def _build_agent_from_dir(project_dir: Path, model: str = "gpt-4o"):
     print(f"Loaded {engine.chunk_count} document chunks from {docs_dir}")
     print(f"Tools: {registry.tool_names}")
 
+    # OTEL observer
+    otel = None
+    if otel_enabled:
+        otel = OTelObserver()
+        otel.start()
+        print(f"OpenTelemetry: enabled (endpoint={otel._otlp_endpoint})")
+
     return ReliabilityAgent(
         tool_registry=registry,
         retrieval_fn=retrieval_fn,
         model=model,
+        otel_observer=otel,
     )
 
 
@@ -110,12 +119,13 @@ def run(
     model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model to use"),
     project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    otel: bool = typer.Option(False, "--otel", help="Enable OpenTelemetry trace/metric export"),
 ):
     """Run the reliability agent on a single task."""
     d = Path(project_dir) if project_dir else _get_project_root()
 
     async def _run():
-        agent = await _build_agent_from_dir(d, model)
+        agent = await _build_agent_from_dir(d, model, otel_enabled=otel)
         result = await agent.run(task=task, task_id="cli-run")
 
         if json_output:
@@ -148,6 +158,7 @@ def eval(
     model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model"),
     project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
     output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    otel: bool = typer.Option(False, "--otel", help="Enable OpenTelemetry trace/metric export"),
 ):
     """Run evaluation benchmarks."""
     from agentops.evals.benchmarks import ALL_BENCHMARKS, get_benchmark
@@ -158,7 +169,7 @@ def eval(
     out = Path(output_dir) if output_dir else d / "eval_results"
 
     async def _run():
-        agent = await _build_agent_from_dir(d, model)
+        agent = await _build_agent_from_dir(d, model, otel_enabled=otel)
         trace_store = TraceStore(str(out / "traces.db"))
         harness = EvalHarness(agent=agent, trace_store=trace_store, model=model, output_dir=str(out))
 
@@ -183,6 +194,7 @@ def serve(
     port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
     model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model"),
     project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    otel: bool = typer.Option(False, "--otel", help="Enable OpenTelemetry trace/metric export"),
 ):
     """Start the FastAPI server."""
     import uvicorn
@@ -190,7 +202,7 @@ def serve(
     d = Path(project_dir) if project_dir else _get_project_root()
 
     async def _start():
-        agent = await _build_agent_from_dir(d, model)
+        agent = await _build_agent_from_dir(d, model, otel_enabled=otel)
         from agentops.tracing.store import TraceStore
         trace_store = TraceStore(str(d / "traces.db"))
 

@@ -6,12 +6,18 @@ reliability graph with trace integration.
 from __future__ import annotations
 
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
 from .graphs import build_reliability_graph
 from .state import ReliabilityState, create_initial_state
 from .tool_registry import ToolRegistry
+
+
+@contextmanager
+def _null_context():
+    yield
 
 
 @dataclass
@@ -76,11 +82,13 @@ class ReliabilityAgent:
         retrieval_fn,
         model: str = "gpt-4o",
         temperature: float = 0.0,
+        otel_observer: Any = None,
     ):
         self.tool_registry = tool_registry
         self.retrieval_fn = retrieval_fn
         self.model = model
         self.temperature = temperature
+        self._otel = otel_observer
         self._graph = build_reliability_graph(
             tool_registry=tool_registry,
             retrieval_fn=retrieval_fn,
@@ -98,18 +106,29 @@ class ReliabilityAgent:
         final_state = None
         error = None
 
-        try:
-            for event in self._graph.stream(state, config):
-                if "__end__" in event:
-                    continue
-                final_state = list(event.values())[-1] if event else None
-        except Exception as e:
-            error = str(e)
+        # OTEL trace wrapper
+        otel = self._otel
+        trace_ctx = (
+            otel.trace_run(task=task, task_id=task_id, model=self.model)
+            if otel and otel.enabled
+            else None
+        )
+        if trace_ctx is None:
+            trace_ctx = _null_context()
+
+        with trace_ctx:
+            try:
+                for event in self._graph.stream(state, config):
+                    if "__end__" in event:
+                        continue
+                    final_state = list(event.values())[-1] if event else None
+            except Exception as e:
+                error = str(e)
 
         total_latency = (time.time() - start_time) * 1000
 
         if final_state is None:
-            return AgentRunResult(
+            result = AgentRunResult(
                 task_id=task_id,
                 task=task,
                 final_answer="",
@@ -126,8 +145,10 @@ class ReliabilityAgent:
                 retrieved_chunks_count=0,
                 reliability_trace=[],
             )
+            self._record_otel_result(otel, result)
+            return result
 
-        return AgentRunResult(
+        result = AgentRunResult(
             task_id=task_id,
             task=task,
             final_answer=final_state.get("final_answer", ""),
@@ -146,6 +167,41 @@ class ReliabilityAgent:
                 dict(t) if hasattr(t, "__iter__") and not isinstance(t, str) else t
                 for t in final_state.get("reliability_trace", [])
             ],
+        )
+
+        # Record step spans from reliability_trace
+        if otel and otel.enabled:
+            for step in result.reliability_trace:
+                if isinstance(step, dict):
+                    otel.record_step(
+                        step_name=step.get("step_name", "unknown"),
+                        step_type=step.get("step_type", "unknown"),
+                        latency_ms=step.get("latency_ms", 0),
+                        extra={
+                            k: v for k, v in step.items()
+                            if k not in ("step_name", "step_type", "latency_ms")
+                        },
+                    )
+
+        self._record_otel_result(otel, result)
+        return result
+
+    def _record_otel_result(self, otel: Any, result: AgentRunResult) -> None:
+        if otel is None or not otel.enabled:
+            return
+        grounded = len(result.grounded_claims)
+        ungrounded = len(result.ungrounded_claims)
+        grounded_ratio = grounded / max(grounded + ungrounded, 1)
+        otel.record_result(
+            success=result.success,
+            verification_passed=result.verification_passed,
+            grounded_ratio=grounded_ratio,
+            tool_calls=result.tool_calls_count,
+            total_latency_ms=result.total_latency_ms,
+            retrieved_chunks=result.retrieved_chunks_count,
+            failure_mode="" if result.success else
+                ("verification" if not result.verification_passed else "error"),
+            error=result.error or "",
         )
 
     def reset(self) -> None:

@@ -1,12 +1,12 @@
 [project]
 name = "agentops-reliability-platform"
-version = "0.1.0"
+version = "0.3.0"
 description = "Production-oriented AgentOps reliability and evaluation platform for tool-using AI agents"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [{name = "Chrysis Andreou", email = "chrysis.andreou.ai@gmail.com"}]
-keywords = ["agents", "agentops", "llm", "evaluation", "reliability", "langgraph", "tracing", "retrieval"]
+keywords = ["agents", "agentops", "llm", "evaluation", "reliability", "langgraph", "tracing", "retrieval", "opentelemetry"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
@@ -43,6 +43,11 @@ dev = [
     "pytest-cov>=5.0.0",
     "ruff>=0.5.0",
     "mypy>=1.10.0",
+]
+otel = [
+    "opentelemetry-api>=1.28.0",
+    "opentelemetry-sdk>=1.28.0",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.28.0",
 ]
 viz = [
     "matplotlib>=3.8.0",

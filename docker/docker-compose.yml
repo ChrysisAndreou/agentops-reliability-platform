@@ -8,9 +8,24 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - AGENTOPS_OTEL_ENABLED=${AGENTOPS_OTEL_ENABLED:-0}
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OTEL_SERVICE_NAME=agentops-reliability
     volumes:
       - ../sample_data:/app/sample_data:ro
       - agentops_data:/app/data
+    depends_on:
+      - jaeger
+
+  # Jaeger — OpenTelemetry trace collector and UI
+  # Access the UI at http://localhost:16686
+  jaeger:
+    image: jaegertracing/all-in-one:1.62
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
 
 volumes:
   agentops_data:
