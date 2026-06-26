@@ -1,0 +1,16 @@
+services:
+  agentops:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ../sample_data:/app/sample_data:ro
+      - agentops_data:/app/data
+
+volumes:
+  agentops_data:
