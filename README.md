@@ -17,8 +17,9 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 8 benchmarks (40 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Systematic evaluation**: 9 benchmarks (45 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
+- **LLM-as-Judge evaluation**: Multi-dimensional quality assessment (accuracy, completeness, relevance, safety, citation, groundedness, clarity) using deterministic or real-LLM judges. Model comparison framework with rankings, dimension breakdowns, and cost-performance Pareto analysis.
 - **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
 - **Guardrails & safety**: Prompt injection detection (7 patterns), content moderation (7 categories), and tool misuse detection (7 misuse types) with safety scoring and block recommendations.
 - **Regression testing**: Save benchmark results as versioned baselines and run CI-friendly regression checks that detect when agent quality drops below configured thresholds across all 8 benchmarks.
@@ -242,13 +243,17 @@ agentops-reliability-platform/
 │   │   └── engine.py      # Hybrid search engine
 │   ├── evals/             # Evaluation framework
 │   │   ├── metrics.py     # Groundedness, citation, verification metrics
-│   │   ├── benchmarks.py  # 8 benchmark suites (40 tasks: support-tickets, systems-quality, tool-use, multi-step, edge-cases, hallucination, multi-agent, guardrails)
+│   │   ├── benchmarks.py  # 9 benchmark suites (45 tasks: support-tickets, systems-quality, tool-use, multi-step, edge-cases, hallucination, multi-agent, guardrails, llm-judge)
 │   │   ├── harness.py     # Evaluation runner + report generator
 │   │   ├── simulator.py   # Configurable simulated agent (4 profiles, deterministic, no API keys)
 │   │   ├── comparator.py  # A/B testing, regression detection, multi-profile comparison
 │   │   ├── budget.py         # Cost and latency budget gates with graceful enforcement
 │   │   ├── baselines.py      # Baseline save/load/list
-│   │   └── regression_runner.py  # Cross-benchmark regression testing (v0.7)
+│   │   ├── regression_runner.py  # Cross-benchmark regression testing (v0.7)
+│   │   ├── model_benchmark.py   # Cross-model comparison with rankings and Pareto analysis (v0.8)
+│   │   └── judge/              # LLM-as-Judge evaluation (v0.8)
+│   │       ├── state.py        # JudgeConfig, JudgeVerdict, JudgeResult, 8 dimensions
+│   │       └── judge.py        # LLMJudge (real API) + SimulatedJudge (CI-safe, deterministic)
 │   ├── guardrails/         # AI safety evaluation (v0.6)
 │   │   ├── state.py        # GuardrailResult, InjectionDetection, ModerationResult
 │   │   ├── patterns.py     # 7 injection + 7 moderation + 7 misuse patterns
@@ -267,7 +272,7 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 204 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent)\n├── docker/                # Dockerfile + docker-compose
+├── tests/                 # 264 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark)\n├── docker/                # Dockerfile + docker-compose
 ├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
@@ -426,6 +431,62 @@ print(result.to_markdown())
 sys.exit(result.exit_code)  # 0 = pass, 1 = regressions
 ```
 
+### LLM-as-Judge Evaluation (v0.8)
+
+Multi-dimensional quality assessment of agent outputs using LLM judges — with deterministic CI-safe simulated judge for zero-API-key evaluation and optional real-LLM judging (GPT-4o, Claude) for production use.
+
+```bash
+# Evaluate agent outputs with deterministic judge (no API keys)
+agentops judge --benchmark support-tickets --output eval_results/
+
+# Compare models side-by-side with rankings and cost analysis
+agentops model-benchmark --models gpt-4o,claude-3-sonnet,deepseek-v4 --benchmark support-tickets
+
+# Evaluate the dedicated LLM-judge benchmark (5 complex QA tasks)
+agentops judge --benchmark llm-judge
+```
+
+**8 judge dimensions** with configurable rubrics and weights:
+
+| Dimension | Weight | What it measures |
+|-----------|--------|-----------------|
+| Accuracy | 1.5 | Factual correctness against known answers |
+| Groundedness | 1.5 | Claims supported by retrieved evidence |
+| Completeness | 1.0 | How thoroughly all query aspects are addressed |
+| Relevance | 1.0 | On-topic focus, avoiding tangents |
+| Safety | 1.2 | Absence of harmful or dangerous content |
+| Citation Quality | 1.0 | Precision and correctness of source citations |
+| Tool Use Quality | 0.8 | Appropriate and effective tool selection |
+| Clarity | 0.5 | Structure, readability, and organization |
+
+**Model comparison framework:**
+- Side-by-side rankings with composite scores and pass rates
+- Per-dimension breakdown highlighting each model's strengths/weaknesses
+- Cost-performance Pareto analysis identifying the best value models
+- Integration with regression framework for model degradation monitoring
+- 7 pre-configured model profiles (GPT-4o, GPT-4o-mini, Claude Opus, Claude Sonnet, DeepSeek v4, simulated-production, simulated-development)
+
+```python
+from agentops.evals.judge import SimulatedJudge, JudgeConfig, JudgeDimension
+from agentops.evals.model_benchmark import ModelBenchmark, MODEL_PROFILES
+
+# Deterministic judge — perfect for CI/CD
+judge = SimulatedJudge(config=JudgeConfig(pass_threshold=0.6), seed=42)
+result = judge.evaluate("task-1", "The answer is...",
+                        key_terms=["docker", "pipeline"])
+
+# Compare GPT-4o vs Claude vs DeepSeek
+bench = ModelBenchmark(use_simulated=True)
+report = bench.compare(
+    models=["gpt-4o", "claude-3-sonnet", "deepseek-v4"],
+    benchmark_name="support-tickets",
+    agent_outputs=outputs_dict,
+)
+print(report.to_markdown())  # Full comparison with rankings and cost analysis
+```
+
+**9th benchmark — `llm-judge`**: 5 complex multi-step QA tasks designed specifically for judge-based quality assessment, covering accuracy, completeness, safety, and multi-faceted reasoning.
+
 ### Budget Gates
 
 ```python
@@ -452,6 +513,7 @@ for step in workflow:
 - [x] Multi-agent coordination tracing — supervisor-worker topology, inter-agent message tracing, coordination metrics, 5-task benchmark
 - [x] Guardrails & safety evaluation — prompt injection, content moderation, tool misuse detection, 3 profiles, 5-task benchmark, 58 tests
 - [x] Regression testing — baseline persistence, CI-friendly regression checks, per-metric thresholds, deterministic simulated agent (v0.7)
+- [x] LLM-as-Judge evaluation — multi-dimensional quality assessment, model comparison framework, Pareto analysis, 9th benchmark (v0.8)
 - [ ] Streaming verification (partial response checking)
 - [ ] Web dashboard for trace exploration
 - [ ] Integration tests with local LLM (Ollama) for CI reproducibility

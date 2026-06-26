@@ -440,7 +440,58 @@ GUARDRAILS_BENCH = ReliabilityBenchmark(
     ],
 )
 
-# ── All benchmarks ──────────────────────────────────────────────────
+# ── Judge Evaluation Benchmark ───────────────────────────────────────
+# 9th benchmark: evaluates agent output quality through LLM-as-judge
+# across accuracy, completeness, safety, citation, and relevance
+
+JUDGE_EVAL_BENCH = ReliabilityBenchmark(
+    name="llm-judge",
+    description="LLM-as-Judge quality evaluation across accuracy, completeness, safety, citation, and relevance dimensions",
+    tasks=[
+        BenchmarkTask(
+            id="je-001",
+            question="A user reports their build failed with 'Docker daemon not available'. They are on the Dedicated plan. What should they check and what upgrade path exists?",
+            category="retrieval",
+            key_terms=["runtime", "docker", "Dedicated", "16 GB", "pipeline settings", "multi-stage"],
+            expected_sources=["clouddeploy-platform.md"],
+            difficulty="easy",
+        ),
+        BenchmarkTask(
+            id="je-002",
+            question="A production deployment was automatically rolled back from v3.7.2 to v3.7.1. The health check at /health returned 503 after 30 seconds. Provide a blameless postmortem analysis covering root cause, prevention, and monitoring improvements.",
+            category="verification",
+            key_terms=["health check", "503", "auto-rollback", "blue-green", "smoke tests", "monitoring", "grace period"],
+            expected_sources=["clouddeploy-platform.md"],
+            difficulty="medium",
+        ),
+        BenchmarkTask(
+            id="je-003",
+            question="What encryption standards does CloudDeploy use for data in transit and at rest? Are there any compliance certifications? What is the data retention policy?",
+            category="retrieval",
+            key_terms=["TLS 1.3", "AES-256", "encryption", "GDPR", "SOC 2", "data retention"],
+            expected_sources=["clouddeploy-security.md", "clouddeploy-platform.md"],
+            difficulty="medium",
+        ),
+        BenchmarkTask(
+            id="je-004",
+            question="I need to set up a CI/CD pipeline for a Python microservice that uses Docker. It needs to run tests, build an image, and deploy to a staging environment. What does my clouddeploy.yml look like and what plan do I need?",
+            category="multi_step",
+            key_terms=["pipeline", "Docker", "test", "build", "deploy", "staging", "clouddeploy.yml", "Dedicated"],
+            expected_sources=["clouddeploy-onboarding.md", "clouddeploy-platform.md"],
+            difficulty="medium",
+        ),
+        BenchmarkTask(
+            id="je-005",
+            question="Compare the Shared, Dedicated, and Enterprise plans. What are the key differences in resources, features, and pricing? Which plan would you recommend for a team of 15 developers deploying 3 services each?",
+            category="multi_step",
+            key_terms=["Shared", "Dedicated", "Enterprise", "4 GB", "16 GB", "32 GB", "pricing", "15 developers", "3 services"],
+            expected_sources=["clouddeploy-platform.md", "clouddeploy-onboarding.md"],
+            difficulty="hard",
+        ),
+    ],
+)
+
+# ── Registry ────────────────────────────────────────────────────────
 
 ALL_BENCHMARKS = [
     SUPPORT_TICKETS_BENCH,
@@ -451,6 +502,7 @@ ALL_BENCHMARKS = [
     HALLUCINATION_BENCH,
     MULTI_AGENT_BENCH,
     GUARDRAILS_BENCH,
+    JUDGE_EVAL_BENCH,
 ]
 
 BENCHMARK_MAP: dict[str, ReliabilityBenchmark] = {b.name: b for b in ALL_BENCHMARKS}

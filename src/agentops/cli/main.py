@@ -989,5 +989,180 @@ def eval_guardrails(
         }, indent=2))
 
 
+# ── LLM Judge Commands ──────────────────────────────────────────────
+
+@app.command()
+def judge(
+    benchmark: str = typer.Option("support-tickets", "--benchmark", "-b", help="Benchmark to evaluate"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON format"),
+):
+    """Evaluate agent outputs using LLM-as-Judge.
+
+    Uses the simulated deterministic judge (no API keys required) to
+    evaluate agent outputs across accuracy, completeness, relevance,
+    safety, and citation quality dimensions.
+
+    For real LLM judging, set environment variables:
+        OPENAI_API_KEY or ANTHROPIC_API_KEY
+    """
+    from agentops.evals.judge.judge import SimulatedJudge, JudgeRunner
+    from agentops.evals.judge.state import JudgeConfig
+    from agentops.evals.benchmarks import get_benchmark
+    from agentops.evals.simulator import SimulatedAgent, PRODUCTION_AGENT
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    out = Path(output_dir) if output_dir else d / "eval_results"
+
+    bench = get_benchmark(benchmark)
+    if bench is None:
+        print(f"Benchmark '{benchmark}' not found.")
+        raise typer.Exit(1)
+
+    # Run simulated agent to get outputs
+    sim_agent = SimulatedAgent(config=PRODUCTION_AGENT, seed=42)
+    outputs: dict[str, dict[str, Any]] = {}
+
+    print(f"Running simulated agent on {benchmark} benchmark ({len(bench.tasks)} tasks)...")
+    async def _run_sim():
+        for task in bench.tasks:
+            result = await sim_agent.run(task.question, task_id=task.id)
+            outputs[task.id] = {
+                "output": result.final_answer,
+                "key_terms": task.key_terms,
+                "expected_sources": task.expected_sources,
+            }
+    asyncio.run(_run_sim())
+
+    # Run judge evaluation
+    print(f"Evaluating with SimulatedJudge ({len(outputs)} tasks)...")
+    runner = JudgeRunner(use_simulated=True)
+    result = runner.evaluate_benchmark(
+        benchmark_name=benchmark,
+        agent_outputs=outputs,
+        agent_model="simulated-production",
+    )
+
+    # Generate and save report
+    report = runner.generate_report(result)
+    out.mkdir(parents=True, exist_ok=True)
+    report_path = out / f"judge_{benchmark}_report.md"
+    report_path.write_text(report)
+    json_path = out / f"judge_{benchmark}_report.json"
+    json_path.write_text(json.dumps(result.to_dict(), indent=2))
+
+    print()
+    print(f"Pass Rate: {result.pass_rate:.1%}")
+    print(f"Mean Composite: {result.mean_composite:.3f}")
+    if result.summary.get("dimension_means"):
+        print("Dimension scores:")
+        for dim, score in sorted(result.summary["dimension_means"].items()):
+            print(f"  {dim}: {score:.3f}")
+    print(f"\nReport: {report_path}")
+
+    if json_output:
+        print(json.dumps(result.to_dict(), indent=2))
+
+
+@app.command()
+def model_benchmark(
+    models: str = typer.Option("gpt-4o,claude-3-sonnet,deepseek-v4", "--models", "-m",
+                                help="Comma-separated model names to compare"),
+    benchmark: str = typer.Option("support-tickets", "--benchmark", "-b", help="Benchmark to compare on"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    json_output: bool = typer.Option(False, "--json", help="Output JSON format"),
+):
+    """Compare multiple models on the same benchmark using LLM-as-Judge.
+
+    Generates side-by-side comparison reports with rankings,
+    dimension breakdowns, and cost-performance analysis.
+
+    Pre-configured models: gpt-4o, gpt-4o-mini, claude-3-opus,
+    claude-3-sonnet, deepseek-v4, simulated-production, simulated-development.
+    """
+    from agentops.evals.model_benchmark import ModelBenchmark
+    from agentops.evals.benchmarks import get_benchmark
+    from agentops.evals.simulator import SimulatedAgent, PRODUCTION_AGENT, DEVELOPMENT_AGENT, PERFECT_AGENT
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    out = Path(output_dir) if output_dir else d / "eval_results"
+
+    bench = get_benchmark(benchmark)
+    if bench is None:
+        print(f"Benchmark '{benchmark}' not found.")
+        raise typer.Exit(1)
+
+    model_list = [m.strip() for m in models.split(",")]
+
+    print(f"Comparing {len(model_list)} models on {benchmark} benchmark ({len(bench.tasks)} tasks)...")
+    print(f"Models: {', '.join(model_list)}")
+
+    # For each model, simulate agent outputs
+    # Different models get different simulator profiles for demonstration
+    profile_map = {
+        "gpt-4o": PRODUCTION_AGENT,
+        "claude-3-opus": PRODUCTION_AGENT,
+        "claude-3-sonnet": PRODUCTION_AGENT,
+        "deepseek-v4": PRODUCTION_AGENT,
+        "gpt-4o-mini": DEVELOPMENT_AGENT,
+        "simulated-production": PRODUCTION_AGENT,
+        "simulated-development": DEVELOPMENT_AGENT,
+    }
+
+    agent_outputs: dict[str, dict[str, dict[str, Any]]] = {}
+
+    for model_name in model_list:
+        sim_profile = profile_map.get(model_name, PRODUCTION_AGENT)
+        # Use different seeds per model for realistic variation
+        seed = hash(model_name) % 10000
+        sim_agent = SimulatedAgent(config=sim_profile, seed=seed)
+        model_outputs: dict[str, dict[str, Any]] = {}
+
+        async def _run_model():
+            for task in bench.tasks:
+                result = await sim_agent.run(task.question, task_id=task.id)
+                model_outputs[task.id] = {
+                    "output": result.final_answer,
+                    "key_terms": task.key_terms,
+                    "expected_sources": task.expected_sources,
+                }
+        asyncio.run(_run_model())
+        agent_outputs[model_name] = model_outputs
+        print(f"  {model_name}: {len(model_outputs)} task outputs generated")
+
+    # Run model comparison
+    print(f"\nRunning model comparison...")
+    bench_runner = ModelBenchmark(use_simulated=True)
+    report = bench_runner.compare(
+        models=model_list,
+        benchmark_name=benchmark,
+        agent_outputs=agent_outputs,
+    )
+
+    # Generate and save reports
+    out.mkdir(parents=True, exist_ok=True)
+    md_report = report.to_markdown()
+    report_path = out / f"model_comparison_{benchmark}.md"
+    report_path.write_text(md_report)
+    json_path = out / f"model_comparison_{benchmark}.json"
+    json_path.write_text(report.to_json())
+
+    print()
+    # Show rankings
+    print("Model Rankings:")
+    for name, rank in sorted(report.rankings.items(), key=lambda x: x[1]):
+        for r in report.results:
+            if r.model.name == name:
+                print(f"  {rank}. {name} — composite: {r.mean_composite:.3f}, pass: {r.pass_rate:.1%}, cost: ${r.estimated_cost_usd:.4f}")
+                break
+
+    print(f"\nReport: {report_path}")
+
+    if json_output:
+        print(report.to_json())
+
+
 if __name__ == "__main__":
     app()

@@ -1,0 +1,271 @@
+{
+  "benchmark_name": "llm-judge",
+  "judge_model": "simulated-judge",
+  "agent_model": "simulated-production",
+  "pass_rate": 0.0,
+  "mean_composite": 0.453,
+  "summary": {
+    "total_tasks": 5,
+    "passed_tasks": 0,
+    "pass_rate": 0.0,
+    "mean_composite": 0.4530173306060357,
+    "dimension_means": {
+      "accuracy": 0.31364029623684375,
+      "completeness": 0.4105679519196971,
+      "relevance": 0.4035083884489711,
+      "safety": 0.9507944619952756,
+      "citation_quality": 0.15670864533613887
+    }
+  },
+  "results": [
+    {
+      "task_id": "je-001",
+      "agent_output": "Based on the available documentation, the key aspects are: check, failed, available, path, docker, upgrade, reports, user, plan., daemon.",
+      "verdicts": [
+        {
+          "dimension": "accuracy",
+          "score": 0.261,
+          "reasoning": "Found 1/6 key terms in output.",
+          "evidence": [
+            "Key term 'docker' found"
+          ],
+          "passed": false
+        },
+        {
+          "dimension": "completeness",
+          "score": 0.26,
+          "reasoning": "Covered 1/6 key aspects.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "relevance",
+          "score": 0.231,
+          "reasoning": "Output has 19 words; 1/6 key terms matched.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "safety",
+          "score": 0.938,
+          "reasoning": "No harmful content detected.",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "dimension": "citation_quality",
+          "score": 0.186,
+          "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+          "evidence": [],
+          "passed": false
+        }
+      ],
+      "composite_score": 0.385,
+      "passed": false,
+      "total_cost_usd": 0.0,
+      "judge_latency_ms": 0.1,
+      "judge_model": "simulated-judge",
+      "error": ""
+    },
+    {
+      "task_id": "je-002",
+      "agent_output": "Based on the available documentation, the key aspects are: deployment, check, blameless, 30, rolled, production, returned, v3.7.2, health, 503, v3.7.1., seconds., automatically.",
+      "verdicts": [
+        {
+          "dimension": "accuracy",
+          "score": 0.148,
+          "reasoning": "Found 1/7 key terms in output.",
+          "evidence": [
+            "Key term '503' found"
+          ],
+          "passed": false
+        },
+        {
+          "dimension": "completeness",
+          "score": 0.385,
+          "reasoning": "Covered 1/7 key aspects.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "relevance",
+          "score": 0.418,
+          "reasoning": "Output has 22 words; 1/7 key terms matched.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "safety",
+          "score": 0.941,
+          "reasoning": "No harmful content detected.",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "dimension": "citation_quality",
+          "score": 0.101,
+          "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+          "evidence": [],
+          "passed": false
+        }
+      ],
+      "composite_score": 0.396,
+      "passed": false,
+      "total_cost_usd": 0.0,
+      "judge_latency_ms": 0.0,
+      "judge_model": "simulated-judge",
+      "error": ""
+    },
+    {
+      "task_id": "je-003",
+      "agent_output": "Based on the available documentation, the key aspects are: use, certifications, policy, standards, data, clouddeploy, transit, compliance, rest.",
+      "verdicts": [
+        {
+          "dimension": "accuracy",
+          "score": 0.055,
+          "reasoning": "Found 0/6 key terms in output.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "completeness",
+          "score": 0.242,
+          "reasoning": "Covered 0/6 key aspects.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "relevance",
+          "score": 0.243,
+          "reasoning": "Output has 18 words; 0/6 key terms matched.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "safety",
+          "score": 0.961,
+          "reasoning": "No harmful content detected.",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "dimension": "citation_quality",
+          "score": 0.134,
+          "reasoning": "Citation signals: 0/6; source matches: 0/2.",
+          "evidence": [],
+          "passed": false
+        }
+      ],
+      "composite_score": 0.325,
+      "passed": false,
+      "total_cost_usd": 0.0,
+      "judge_latency_ms": 0.0,
+      "judge_model": "simulated-judge",
+      "error": ""
+    },
+    {
+      "task_id": "je-004",
+      "agent_output": "Based on the available documentation, the key aspects are: ci, uses, docker., tests, python, set, need, microservice, build, up, cd, pipeline, image.",
+      "verdicts": [
+        {
+          "dimension": "accuracy",
+          "score": 0.598,
+          "reasoning": "Found 4/8 key terms in output.",
+          "evidence": [
+            "Key term 'pipeline' found",
+            "Key term 'Docker' found",
+            "Key term 'test' found",
+            "Key term 'build' found"
+          ],
+          "passed": false
+        },
+        {
+          "dimension": "completeness",
+          "score": 0.698,
+          "reasoning": "Covered 4/8 key aspects.",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "dimension": "relevance",
+          "score": 0.553,
+          "reasoning": "Output has 22 words; 4/8 key terms matched.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "safety",
+          "score": 0.972,
+          "reasoning": "No harmful content detected.",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "dimension": "citation_quality",
+          "score": 0.13,
+          "reasoning": "Citation signals: 0/6; source matches: 0/2.",
+          "evidence": [],
+          "passed": false
+        }
+      ],
+      "composite_score": 0.604,
+      "passed": false,
+      "total_cost_usd": 0.0,
+      "judge_latency_ms": 0.0,
+      "judge_model": "simulated-judge",
+      "error": ""
+    },
+    {
+      "task_id": "je-005",
+      "agent_output": "Based on the available documentation, the key aspects are: differences, enterprise, shared, dedicated, recommend, developers, resources, team, plan, pricing, key.",
+      "verdicts": [
+        {
+          "dimension": "accuracy",
+          "score": 0.506,
+          "reasoning": "Found 4/9 key terms in output.",
+          "evidence": [
+            "Key term 'Shared' found",
+            "Key term 'Dedicated' found",
+            "Key term 'Enterprise' found",
+            "Key term 'pricing' found"
+          ],
+          "passed": false
+        },
+        {
+          "dimension": "completeness",
+          "score": 0.467,
+          "reasoning": "Covered 4/9 key aspects.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "relevance",
+          "score": 0.573,
+          "reasoning": "Output has 20 words; 4/9 key terms matched.",
+          "evidence": [],
+          "passed": false
+        },
+        {
+          "dimension": "safety",
+          "score": 0.941,
+          "reasoning": "No harmful content detected.",
+          "evidence": [],
+          "passed": true
+        },
+        {
+          "dimension": "citation_quality",
+          "score": 0.232,
+          "reasoning": "Citation signals: 0/6; source matches: 0/2.",
+          "evidence": [],
+          "passed": false
+        }
+      ],
+      "composite_score": 0.555,
+      "passed": false,
+      "total_cost_usd": 0.0,
+      "judge_latency_ms": 0.0,
+      "judge_model": "simulated-judge",
+      "error": ""
+    }
+  ]
+}
