@@ -442,6 +442,133 @@ def benchmarks():
         print(f"{b['name']:<30} {b['task_count']:<6} {cats:<40} {diffs}")
 
 
+# ── Baseline Management Commands ───────────────────────────────────
+
+baseline_app = typer.Typer(
+    name="baseline",
+    help="Manage evaluation baselines for regression testing",
+    no_args_is_help=True,
+)
+
+
+@baseline_app.command("save")
+def baseline_save(
+    name: str = typer.Option(..., "--name", "-n", help="Baseline name (e.g. v0.6)"),
+    from_dir: Optional[str] = typer.Option(None, "--from-dir", "-f", help="Directory containing benchmark JSON reports"),
+    profile: str = typer.Option("production", "--profile", "-p", help="Agent profile used"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for baseline file"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+):
+    """Save current benchmark results as a regression baseline.
+
+    Reads all benchmark_report.json files from the given directory
+    (default: eval_results/) and saves them as a named baseline.
+    """
+    from agentops.evals.baselines import save_baseline
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    source_dir = Path(from_dir) if from_dir else d / "eval_results"
+    out = Path(output_dir) if output_dir else d / "eval_results" / "baselines"
+
+    # Collect all JSON benchmark reports
+    benchmark_results: dict[str, list[dict[str, Any]]] = {}
+    for json_file in sorted(source_dir.glob("*_report.json")):
+        bench_name = json_file.stem.replace("_report", "")
+        try:
+            data = json.loads(json_file.read_text())
+            benchmark_results[bench_name] = data.get("results", [])
+            print(f"  Loaded {bench_name}: {len(benchmark_results[bench_name])} tasks")
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"  Skipping {json_file}: {e}")
+
+    if not benchmark_results:
+        print("No benchmark JSON reports found. Run 'agentops simulate --benchmark all' first.")
+        raise typer.Exit(1)
+
+    file_path = save_baseline(
+        benchmark_results=benchmark_results,
+        name=name,
+        profile=profile,
+        output_path=out,
+    )
+
+    print(f"\nBaseline saved: {file_path}")
+    print(f"  Name: {name}")
+    print(f"  Profile: {profile}")
+    print(f"  Benchmarks: {len(benchmark_results)}")
+
+
+@baseline_app.command("list")
+def baseline_list(
+    baselines_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Baselines directory"),
+    project_dir: Optional[str] = typer.Option(None, "--project-dir", help="Project root directory"),
+):
+    """List all saved baselines."""
+    from agentops.evals.baselines import list_baselines
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    bd = Path(baselines_dir) if baselines_dir else d / "eval_results" / "baselines"
+
+    baselines = list_baselines(bd)
+
+    if not baselines:
+        print(f"No baselines found in {bd}")
+        print("Create one with: agentops baseline save --name v0.6")
+        return
+
+    print(f"Baselines in {bd}:")
+    print(f"{'Name':<25} {'Profile':<15} {'Benchmarks':<12} {'Created'}")
+    print("-" * 80)
+    for b in baselines:
+        print(f"{b['name']:<25} {b['profile']:<15} {b['benchmark_count']:<12} {b['created_at']}")
+
+
+app.add_typer(baseline_app, name="baseline")
+
+
+# ── Regression Testing Commands ────────────────────────────────────
+
+@app.command()
+def regression(
+    baseline: str = typer.Option(..., "--baseline", "-b", help="Baseline name or path to compare against"),
+    profile: str = typer.Option("production", "--profile", "-p", help="Agent profile: perfect, production, development, unreliable"),
+    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Run regression tests against a saved baseline.
+
+    Runs all benchmarks with the simulated agent and compares results
+    to the specified baseline. Exits with code 1 if any benchmarks
+    show regressions below configured thresholds.
+
+    CI-friendly: run this in GitHub Actions to gate PRs on agent quality.
+    """
+    from agentops.evals.regression_runner import RegressionRunner
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    out = Path(output_dir) if output_dir else d / "eval_results"
+
+    runner = RegressionRunner(profile=profile, baselines_dir=d / "eval_results" / "baselines")
+
+    async def _run():
+        return await runner.run(baseline_name=baseline, output_dir=out)
+
+    result = asyncio.run(_run())
+
+    if json_output:
+        print(result.to_json())
+    else:
+        print(result.to_markdown())
+        print()
+        if result.has_regressions:
+            print("❌ REGRESSIONS DETECTED — exiting with code 1")
+        else:
+            print("✅ All benchmarks passed regression checks")
+
+    raise typer.Exit(code=result.exit_code)
+
+
 # ── Multi-Agent Commands ──────────────────────────────────────────────
 
 @app.command()

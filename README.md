@@ -17,7 +17,13 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 8 benchmarks (40 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.\n- **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.\n- **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.\n- **Guardrails & safety**: Prompt injection detection (7 patterns), content moderation (7 categories), and tool misuse detection (7 misuse types) with safety scoring and block recommendations.\n- **Failure classification**: automatic pattern detection for 8 failure modes.\n- **Cost & latency budget gates**: configurable per-run and per-step cost/latency limits with graceful degradation.
+- **Systematic evaluation**: 8 benchmarks (40 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
+- **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
+- **Guardrails & safety**: Prompt injection detection (7 patterns), content moderation (7 categories), and tool misuse detection (7 misuse types) with safety scoring and block recommendations.
+- **Regression testing**: Save benchmark results as versioned baselines and run CI-friendly regression checks that detect when agent quality drops below configured thresholds across all 8 benchmarks.
+- **Failure classification**: automatic pattern detection for 8 failure modes.
+- **Cost & latency budget gates**: configurable per-run and per-step cost/latency limits with graceful degradation.
 
 ---
 
@@ -240,7 +246,9 @@ agentops-reliability-platform/
 │   │   ├── harness.py     # Evaluation runner + report generator
 │   │   ├── simulator.py   # Configurable simulated agent (4 profiles, deterministic, no API keys)
 │   │   ├── comparator.py  # A/B testing, regression detection, multi-profile comparison
-│   │   └── budget.py      # Cost and latency budget gates with graceful enforcement
+│   │   ├── budget.py         # Cost and latency budget gates with graceful enforcement
+│   │   ├── baselines.py      # Baseline save/load/list
+│   │   └── regression_runner.py  # Cross-benchmark regression testing (v0.7)
 │   ├── guardrails/         # AI safety evaluation (v0.6)
 │   │   ├── state.py        # GuardrailResult, InjectionDetection, ModerationResult
 │   │   ├── patterns.py     # 7 injection + 7 moderation + 7 misuse patterns
@@ -259,7 +267,7 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 173 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent)\n├── docker/                # Dockerfile + docker-compose
+├── tests/                 # 204 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent)\n├── docker/                # Dockerfile + docker-compose
 ├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
@@ -383,6 +391,41 @@ print(f"Safety: {result.safety_score:.2f}, Block: {result.should_block}")
 # → Safety: 0.74, Block: True (injection detected)
 ```
 
+### Regression Testing (v0.7)
+
+CI-friendly agent quality gates — save baselines, detect regressions, fail fast:
+
+```bash
+# Save current benchmark results as a named baseline
+agentops baseline save --name v0.7 --from-dir eval_results/
+
+# List saved baselines
+agentops baseline list
+
+# Run regression tests against a baseline (exits code 1 on regression)
+agentops regression --baseline v0.7 --profile production
+
+# CI usage: gate PRs on agent quality
+agentops regression --baseline v0.7 --json
+```
+
+**Features:**
+- **Baseline persistence**: Save benchmark runs as versioned JSON baselines
+- **Cross-benchmark regression**: Compare all 8 benchmarks against a baseline in one command
+- **Per-metric thresholds**: Configurable sensitivity per metric (composite, groundedness, citation, verification, latency)
+- **CI-ready exit codes**: Exit 0 if all benchmarks pass, exit 1 if any regression detected
+- **Deterministic**: Uses the simulated agent backend — no API keys needed, same input always produces same result
+
+```python
+from agentops.evals.regression_runner import RegressionRunner
+
+runner = RegressionRunner(profile="production")
+result = await runner.run(baseline_name="v0.6", output_dir="eval_results/")
+
+print(result.to_markdown())
+sys.exit(result.exit_code)  # 0 = pass, 1 = regressions
+```
+
 ### Budget Gates
 
 ```python
@@ -408,6 +451,7 @@ for step in workflow:
 - [x] Cost and latency budget gates — configurable per-run and per-step budgets with graceful enforcement
 - [x] Multi-agent coordination tracing — supervisor-worker topology, inter-agent message tracing, coordination metrics, 5-task benchmark
 - [x] Guardrails & safety evaluation — prompt injection, content moderation, tool misuse detection, 3 profiles, 5-task benchmark, 58 tests
+- [x] Regression testing — baseline persistence, CI-friendly regression checks, per-metric thresholds, deterministic simulated agent (v0.7)
 - [ ] Streaming verification (partial response checking)
 - [ ] Web dashboard for trace exploration
 - [ ] Integration tests with local LLM (Ollama) for CI reproducibility
