@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: agentops-api
+  namespace: agentops
+  labels:
+    app.kubernetes.io/name: agentops-reliability-platform
+    app.kubernetes.io/component: reliability
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: agentops-api

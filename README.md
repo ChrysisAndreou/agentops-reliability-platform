@@ -125,6 +125,20 @@ Endpoints:
 docker compose -f docker/docker-compose.yml up
 ```
 
+### Kubernetes
+
+Production-grade K8s deployment with HPA, TLS ingress, network policies, and Terraform support.
+
+```bash
+# Apply with Kustomize
+kubectl apply -k k8s/
+
+# Or provision with Terraform
+cd terraform && terraform init && terraform apply
+```
+
+See [`k8s/README.md`](k8s/README.md) for full deployment guide, architecture diagram, and troubleshooting.
+
 ---
 
 ## Metrics Measured
@@ -189,6 +203,8 @@ agentops-reliability-platform/
 │   └── tickets/           # 10 realistic support/quality tickets
 ├── tests/                 # 19 pytest tests
 ├── docker/                # Dockerfile + docker-compose
+├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
+├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
 ```
 
@@ -205,6 +221,7 @@ agentops-reliability-platform/
 
 ## Roadmap
 
+- [x] Kubernetes Deployment — production-grade manifests with HPA, TLS, network policies, Terraform
 - [ ] OpenTelemetry trace export for production observability
 - [ ] Multi-agent coordination tracing
 - [ ] Streaming verification (partial response checking)

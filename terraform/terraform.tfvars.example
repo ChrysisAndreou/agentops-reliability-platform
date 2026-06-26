@@ -1,0 +1,20 @@
+# ─── Terraform variables ───
+# Copy this to terraform.tfvars and fill in your values.
+
+cluster_context = "gke_my-project_europe-west4_agentops-cluster"
+ingress_host    = "agentops.example.com"
+
+# LLM API keys (optional — can also be set via environment)
+# openai_api_key    = "sk-..."
+# anthropic_api_key = "sk-ant-..."
+
+# Resource tuning (adjust for your workload)
+# replicas        = 2
+# min_replicas    = 2
+# max_replicas    = 8
+# cpu_request     = "250m"
+# cpu_limit       = "1"
+# memory_request  = "512Mi"
+# memory_limit    = "2Gi"
+# storage_class   = "standard"
+# storage_size    = "10Gi"
