@@ -17,7 +17,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 13 benchmarks (65 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Systematic evaluation**: 14 benchmarks with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
 - **LLM-as-Judge evaluation**: Multi-dimensional quality assessment (accuracy, completeness, relevance, safety, citation, groundedness, clarity) using deterministic or real-LLM judges. Model comparison framework with rankings, dimension breakdowns, and cost-performance Pareto analysis.
 - **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
@@ -29,6 +29,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Structured output & function calling evaluation**: JSON Schema validation for agent outputs (type checking, required fields, enum/pattern constraints, numeric ranges), function/tool call quality scoring (tool selection correctness, parameter validation, hallucinated tool detection), 2 new benchmarks (10 tasks), and comprehensive CLI for structured output quality gates (v0.11).
 - **Prompt management & optimization**: versioned prompt registry, A/B comparison against benchmarks, iterative optimization using evaluation feedback, 5 built-in templates, 10th benchmark.
 - **Agent memory evaluation (v0.12)**: Multi-turn conversation memory testing across 5 benchmarks (episodic, semantic, working, cross-conversation, degradation) with 4 configurable memory profiles (perfect, production, development, degraded), recall precision/rate metrics, hallucination detection, and per-type breakdowns; 39 new tests.
+- **Production alerting (v0.13)**: Threshold-based monitoring with 11 built-in alert rules (verification drops, hallucination spikes, latency explosions, multi-dimensional degradation), 4 configurable profiles (strict, production, permissive, silent), pluggable channel providers (console, file, webhook), cooldown-based alert storm prevention, markdown/JSON reporting, and CI-friendly alert evaluation (exit code 2 on critical); 82 new tests.
 
 ---
 
@@ -306,6 +307,11 @@ agentops-reliability-platform/
 │   │   ├── state.py        # JSONSchema, SchemaValidationResult, FunctionCallResult
 │   │   ├── validator.py    # SchemaValidator + FunctionCallValidator
 │   │   └── metrics.py      # Schema adherence, function call correctness, composite
+│   ├── alerting/          # Production alerting — rules, channels, profiles (v0.13)
+│   │   ├── state.py        # AlertCondition, AlertRule, Alert, AlertReport, 4 profiles
+│   │   ├── rules.py        # 11 built-in rules, condition/rule evaluation engine
+│   │   ├── channels.py     # ConsoleChannel, FileChannel, WebhookChannel providers
+│   │   └── manager.py      # AlertManager with cooldowns + evaluate/evaluate_static
 │   ├── api/               # FastAPI server
 │   │   └── app.py         # REST endpoints
 │   └── cli/               # CLI (Typer)
@@ -313,8 +319,8 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 441 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard, structured_output, memory)\n├── docker/                # Dockerfile + docker-compose
-├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
+├── tests/                 # 523 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard, structured_output, memory, alerting)
+├── docker/                # Dockerfile + docker-compose
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
 ```
@@ -685,7 +691,75 @@ print(f"Valid: {result.is_valid}, Adherence: {result.adherence_score:.1%}")
 # → Valid: True, Adherence: 100.0%
 ```
 
-**56 new tests** — schema field models, JSONSchema serialization/deserialization, SchemaValidator (valid/invalid/enum/pattern/range/malformed/null/boolean/array), FunctionCallValidator (correct/wrong tool/hallucinated/missing params/wrong type/bad value/extra params/boolean strictness/approximate match), metrics computation, report generation, CLI integration.
+**82 new tests** — state models (severity, condition, rule, alert, report, profiles), rule evaluation (single + multi-condition AND semantics, boundary values, all 11 built-in rules), AlertManager (evaluate, evaluate_static, cooldowns, profile filtering, run_id, custom config, disabled rules, missing metrics), channels (console formatting, file create/append/parent-dirs, webhook disabled/no-url/crash-safe, create_channel factory, no-op), integration (healthy→degrading transition, JSON roundtrip, markdown report), and edge cases (empty metrics, zero/very-high/boundary values, float precision).
+
+---
+
+### Production Alerting (v0.13)
+
+Completes the observability loop: collect (traces) → evaluate (benchmarks) → visualize (dashboard) → **alert (this module)**. Teams get notified when agent quality degrades before users notice.
+
+```bash
+# List all 11 built-in alert rules
+agentops alert rules
+
+# Check current metrics against alert rules (dry-run)
+agentops alert check --verification-pass-rate 0.55 --hallucination-rate 0.18 --profile production
+
+# Run alert evaluation benchmarks (5 scenarios)
+agentops alert eval --profile production --output eval_results/alerts/
+
+# CI usage: exit code 2 when critical alerts fire
+agentops alert check --verification-pass-rate 0.30 --profile strict
+```
+
+**11 built-in alert rules** covering the most common agent reliability failures:
+
+| Rule | Severity | Condition |
+|------|----------|-----------|
+| verification-drop-critical | CRITICAL | Pass rate < 60% |
+| verification-drop-warning | WARNING | Pass rate < 75% |
+| hallucination-spike-critical | CRITICAL | Hallucination rate > 15% |
+| groundedness-drop-warning | WARNING | Groundedness < 70% |
+| latency-spike-warning | WARNING | P95 latency > 10s |
+| failure-rate-critical | CRITICAL | Failure rate > 20% |
+| tool-failure-warning | WARNING | Tool failure > 10% |
+| citation-quality-info | INFO | Citation quality < 80% |
+| composite-quality-warning | WARNING | Composite score < 0.50 |
+| multi-dimensional-degradation-critical | CRITICAL | Verification < 70% AND groundedness < 65% |
+| memory-degradation-warning | WARNING | Memory F1 < 70% |
+
+**4 alert profiles**: strict (all rules, 60s cooldown), production (critical+warning, 300s), permissive (critical-only, 600s), silent (no alerts).
+
+**3 channel providers**: ConsoleChannel (ANSI-colored stdout), FileChannel (JSON Lines append), WebhookChannel (HTTP POST — Slack, Discord, custom).
+
+**5 evaluation scenarios**: healthy (0 alerts), degraded (10 alerts), critical (10 alerts), edge-threshold (0 alerts — boundary values exactly at thresholds), multi-dim-degrade (4 alerts — verification+groundedness dual-condition).
+
+```python
+from agentops.alerting import AlertManager, get_alert_profile
+
+config = get_alert_profile("production")
+manager = AlertManager(config)
+
+# After collecting metrics from trace store or eval run
+metrics = {
+    "verification_pass_rate": 0.55,
+    "hallucination_rate": 0.18,
+    "groundedness": 0.62,
+    "failure_rate": 0.25,
+}
+
+# Evaluate and dispatch alerts
+report = manager.evaluate(metrics)
+print(report.to_markdown())
+
+# Side-effect-free evaluation for testing/CI
+report = manager.evaluate_static(metrics)
+if report.has_critical:
+    sys.exit(2)  # Fail CI when agent quality is critical
+```
+
+**82 new tests** — state models, rule evaluation (single + multi-condition AND semantics), AlertManager (evaluate, evaluate_static, cooldowns, profiles, custom config), channels (console, file, webhook, factory), integration (lifecycle, JSON roundtrip, markdown), edge cases (empty/zero/boundary values, float precision).
 
 ---
 
@@ -703,6 +777,7 @@ print(f"Valid: {result.is_valid}, Adherence: {result.adherence_score:.1%}")
 - [x] Live observability dashboard — WebSocket streaming, Chart.js visualizations, failure analysis, dark UI, 32 tests (v0.10)
 - [x] Structured output & function calling evaluation — JSON Schema validation, tool call quality scoring, 2 benchmarks (10 tasks), 56 tests (v0.11)
 - [x] Agent memory evaluation — multi-turn conversation recall, 5 benchmarks, 4 profiles, hallucination detection, 39 tests (v0.12)
+- [x] Production alerting — 11 rules, 3 channels, 4 profiles, 5 eval scenarios, cooldowns, CI integration, 82 tests (v0.13)
 - [ ] Streaming verification (partial response checking)
 - [ ] SDK/client library for agent instrumentation (`pip install agentops`)
 - [ ] Alerting integrations (Slack, email, webhook)

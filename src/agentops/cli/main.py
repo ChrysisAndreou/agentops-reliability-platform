@@ -1934,5 +1934,212 @@ def eval(
         print(json.dumps(agg_report, indent=2))
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Alerting commands (v0.13)
+# ═══════════════════════════════════════════════════════════════════════
+
+alert_app = typer.Typer(
+    name="alert",
+    help="Production alerting — evaluate rules against metrics and dispatch alerts",
+    no_args_is_help=True,
+)
+app.add_typer(alert_app)
+
+
+@alert_app.command("rules")
+def alert_rules():
+    """List all built-in alert rules with severity and conditions."""
+    from agentops.alerting.rules import BUILT_IN_RULES
+
+    print(f"\nBuilt-in Alert Rules ({len(BUILT_IN_RULES)} total)\n")
+    print(f"{'=' * 80}")
+
+    for rule in BUILT_IN_RULES:
+        severity_color = {
+            "critical": "\033[91m",
+            "warning": "\033[93m",
+            "info": "\033[94m",
+        }.get(rule.severity.value, "")
+        reset = "\033[0m"
+
+        print(f"\n{severity_color}[{rule.severity.value.upper()}]{reset} {rule.name}")
+        print(f"  {rule.description}")
+        print(f"  Conditions ({len(rule.conditions)}):")
+        for cond in rule.conditions:
+            print(f"    - {cond.metric} {cond.operator} {cond.threshold} (window: {cond.window})")
+        print(f"  Channels: {', '.join(rule.channels)}")
+        print(f"  Cooldown: {rule.cooldown_seconds}s")
+    print()
+
+
+@alert_app.command("check")
+def alert_check(
+    profile: str = typer.Option("production", help="Alert profile: strict, production, permissive, silent"),
+    metrics_json: str | None = typer.Option(None, help="JSON dict of metric_name: value, e.g. '{\"verification_pass_rate\": 0.55}'"),
+    verification_pass_rate: float | None = typer.Option(None, help="Verification pass rate (0-1)"),
+    groundedness: float | None = typer.Option(None, help="Groundedness ratio (0-1)"),
+    hallucination_rate: float | None = typer.Option(None, help="Hallucination rate (0-1)"),
+    failure_rate: float | None = typer.Option(None, help="Agent failure rate (0-1)"),
+    latency_p95_ms: float | None = typer.Option(None, help="P95 latency in milliseconds"),
+    composite_score: float | None = typer.Option(None, help="Composite quality score (0-1)"),
+    tool_failure_rate: float | None = typer.Option(None, help="Tool call failure rate (0-1)"),
+    citation_quality: float | None = typer.Option(None, help="Citation quality (0-1)"),
+    memory_f1: float | None = typer.Option(None, help="Memory recall F1 (0-1)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Evaluate alert rules against current metrics (dry-run, no dispatch)."""
+    from agentops.alerting import AlertManager, get_alert_profile
+
+    config = get_alert_profile(profile)
+    if config is None:
+        print(f"Unknown profile: {profile}")
+        print(f"Available: {list(ALERT_PROFILES.keys())}")
+        raise typer.Exit(code=1)
+
+    # Build metrics dict
+    if metrics_json:
+        import json as _json
+        metric_values = _json.loads(metrics_json)
+    else:
+        metric_values = {}
+        opts = {
+            "verification_pass_rate": verification_pass_rate,
+            "groundedness": groundedness,
+            "hallucination_rate": hallucination_rate,
+            "failure_rate": failure_rate,
+            "latency_p95_ms": latency_p95_ms,
+            "composite_score": composite_score,
+            "tool_failure_rate": tool_failure_rate,
+            "citation_quality": citation_quality,
+            "memory_f1": memory_f1,
+        }
+        metric_values = {k: v for k, v in opts.items() if v is not None}
+
+    if not metric_values:
+        print("No metrics provided. Use --metrics-json or individual --metric flags.")
+        raise typer.Exit(code=1)
+
+    mgr = AlertManager(config)
+    report = mgr.evaluate_static(metric_values)
+
+    if json_output:
+        print(json.dumps(report.to_dict(), indent=2))
+    else:
+        print(report.to_markdown())
+
+    if report.has_critical:
+        raise typer.Exit(code=2)
+
+
+@alert_app.command("eval")
+def alert_eval(
+    profile: str = typer.Option("production", help="Alert profile"),
+    output: str = typer.Option("eval_results/alerts", help="Output directory for reports"),
+):
+    """Run alert evaluation benchmarks — test rules against healthy, degraded, and edge-case scenarios."""
+    from agentops.alerting import AlertManager, get_alert_profile
+    from agentops.alerting.state import AlertReport
+
+    config = get_alert_profile(profile)
+    if config is None:
+        print(f"Unknown profile: {profile}")
+        raise typer.Exit(code=1)
+
+    out = Path(output)
+    out.mkdir(parents=True, exist_ok=True)
+
+    scenarios = {
+        "healthy": {
+            "verification_pass_rate": 0.90,
+            "groundedness": 0.88,
+            "hallucination_rate": 0.02,
+            "failure_rate": 0.03,
+            "latency_p95_ms": 2500,
+            "composite_score": 0.82,
+            "tool_failure_rate": 0.03,
+            "citation_quality": 0.92,
+            "memory_f1": 0.88,
+        },
+        "degraded": {
+            "verification_pass_rate": 0.55,
+            "groundedness": 0.60,
+            "hallucination_rate": 0.18,
+            "failure_rate": 0.25,
+            "latency_p95_ms": 12000,
+            "composite_score": 0.42,
+            "tool_failure_rate": 0.15,
+            "citation_quality": 0.70,
+            "memory_f1": 0.55,
+        },
+        "critical": {
+            "verification_pass_rate": 0.25,
+            "groundedness": 0.35,
+            "hallucination_rate": 0.35,
+            "failure_rate": 0.50,
+            "latency_p95_ms": 25000,
+            "composite_score": 0.15,
+            "tool_failure_rate": 0.30,
+            "citation_quality": 0.40,
+            "memory_f1": 0.25,
+        },
+        "edge-threshold": {
+            "verification_pass_rate": 0.75,
+            "groundedness": 0.70,
+            "hallucination_rate": 0.15,
+            "failure_rate": 0.20,
+            "latency_p95_ms": 10000,
+            "composite_score": 0.50,
+            "tool_failure_rate": 0.10,
+            "citation_quality": 0.80,
+            "memory_f1": 0.70,
+        },
+        "multi-dim-degrade": {
+            "verification_pass_rate": 0.55,
+            "groundedness": 0.50,
+            "hallucination_rate": 0.05,
+            "failure_rate": 0.08,
+            "latency_p95_ms": 3000,
+            "composite_score": 0.60,
+            "tool_failure_rate": 0.05,
+            "citation_quality": 0.85,
+            "memory_f1": 0.80,
+        },
+    }
+
+    mgr = AlertManager(config)
+    all_reports: dict[str, AlertReport] = {}
+
+    print(f"\nAlert Evaluation — Profile: {profile}")
+    print(f"Rules: {len(config.rules)} | Scenarios: {len(scenarios)}")
+    print(f"{'=' * 60}")
+
+    for name, metrics in scenarios.items():
+        report = mgr.evaluate_static(metrics)
+        all_reports[name] = report
+
+        triggered_count = len(report.alerts_triggered)
+        severities = ", ".join(
+            f"{sev}×{cnt}" for sev, cnt in report.alert_count_by_severity.items()
+        ) if report.alerts_triggered else "none"
+
+        print(f"\n  [{name}] {triggered_count} alerts ({severities})")
+
+        # Save individual report
+        report_path = out / f"alert_{name}_report.json"
+        report_path.write_text(json.dumps(report.to_dict(), indent=2))
+
+    # Aggregate summary
+    print(f"\n{'=' * 60}")
+    print("Alert Evaluation Summary")
+    print(f"{'=' * 60}")
+    print(f"{'Scenario':<20} {'Alerts':<8} {'Critical':<10} {'Warnings':<10}")
+    print("-" * 48)
+    for name, report in all_reports.items():
+        sev = report.alert_count_by_severity
+        print(f"{name:<20} {len(report.alerts_triggered):<8} {sev.get('critical', 0):<10} {sev.get('warning', 0):<10}")
+
+    print(f"\nReports saved to: {out}/")
+
+
 if __name__ == "__main__":
     app()
