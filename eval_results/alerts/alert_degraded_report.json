@@ -1,0 +1,224 @@
+{
+  "profile": "",
+  "rules_evaluated": 10,
+  "conditions_checked": 11,
+  "conditions_matched": 11,
+  "alerts_triggered": 10,
+  "alerts": [
+    {
+      "rule_name": "verification-drop-critical",
+      "severity": "critical",
+      "message": "Verification pass rate dropped below 60% \u2014 agent is rejecting most outputs",
+      "conditions": [
+        "verification_pass_rate (0.550) lt 0.600"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938865+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "verification-drop-warning",
+      "severity": "warning",
+      "message": "Verification pass rate dropped below 75% \u2014 investigate agent quality",
+      "conditions": [
+        "verification_pass_rate (0.550) lt 0.750"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938894+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "hallucination-spike-critical",
+      "severity": "critical",
+      "message": "Hallucination rate exceeded 15% \u2014 agent is fabricating claims at dangerous levels",
+      "conditions": [
+        "hallucination_rate (0.180) gt 0.150"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938907+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "groundedness-drop-warning",
+      "severity": "warning",
+      "message": "Groundedness ratio dropped below 70% \u2014 agent claims are increasingly unsupported",
+      "conditions": [
+        "groundedness (0.600) lt 0.700"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938912+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "latency-spike-warning",
+      "severity": "warning",
+      "message": "P95 latency exceeded 10 seconds \u2014 agent is becoming unresponsive",
+      "conditions": [
+        "latency_p95_ms (12000.000) gt 10000.000"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938917+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "failure-rate-critical",
+      "severity": "critical",
+      "message": "Agent failure rate exceeded 20% \u2014 reliability emergency",
+      "conditions": [
+        "failure_rate (0.250) gt 0.200"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938921+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "tool-failure-warning",
+      "severity": "warning",
+      "message": "Tool call failure rate exceeded 10% \u2014 tools may be degraded",
+      "conditions": [
+        "tool_failure_rate (0.150) gt 0.100"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938925+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "composite-quality-warning",
+      "severity": "warning",
+      "message": "Composite quality score dropped below 0.50 \u2014 agent quality is degrading across multiple dimensions",
+      "conditions": [
+        "composite_score (0.420) lt 0.500"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938929+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "multi-dimensional-degradation-critical",
+      "severity": "critical",
+      "message": "Both verification rate AND groundedness dropped \u2014 systemic agent degradation",
+      "conditions": [
+        "verification_pass_rate (0.550) lt 0.700",
+        "groundedness (0.600) lt 0.650"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938934+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "memory-degradation-warning",
+      "severity": "warning",
+      "message": "Agent memory recall F1 dropped below 70% \u2014 agent is forgetting context",
+      "conditions": [
+        "memory_f1 (0.550) lt 0.700"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.6,
+        "hallucination_rate": 0.18,
+        "failure_rate": 0.25,
+        "latency_p95_ms": 12000,
+        "composite_score": 0.42,
+        "tool_failure_rate": 0.15,
+        "citation_quality": 0.7,
+        "memory_f1": 0.55
+      },
+      "triggered_at": "2026-06-27T06:00:06.938939+00:00",
+      "run_id": ""
+    }
+  ],
+  "by_severity": {
+    "critical": 4,
+    "warning": 6
+  }
+}

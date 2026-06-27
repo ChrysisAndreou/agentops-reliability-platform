@@ -1,0 +1,98 @@
+{
+  "profile": "",
+  "rules_evaluated": 10,
+  "conditions_checked": 11,
+  "conditions_matched": 5,
+  "alerts_triggered": 4,
+  "alerts": [
+    {
+      "rule_name": "verification-drop-critical",
+      "severity": "critical",
+      "message": "Verification pass rate dropped below 60% \u2014 agent is rejecting most outputs",
+      "conditions": [
+        "verification_pass_rate (0.550) lt 0.600"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.5,
+        "hallucination_rate": 0.05,
+        "failure_rate": 0.08,
+        "latency_p95_ms": 3000,
+        "composite_score": 0.6,
+        "tool_failure_rate": 0.05,
+        "citation_quality": 0.85,
+        "memory_f1": 0.8
+      },
+      "triggered_at": "2026-06-27T06:00:06.940211+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "verification-drop-warning",
+      "severity": "warning",
+      "message": "Verification pass rate dropped below 75% \u2014 investigate agent quality",
+      "conditions": [
+        "verification_pass_rate (0.550) lt 0.750"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.5,
+        "hallucination_rate": 0.05,
+        "failure_rate": 0.08,
+        "latency_p95_ms": 3000,
+        "composite_score": 0.6,
+        "tool_failure_rate": 0.05,
+        "citation_quality": 0.85,
+        "memory_f1": 0.8
+      },
+      "triggered_at": "2026-06-27T06:00:06.940222+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "groundedness-drop-warning",
+      "severity": "warning",
+      "message": "Groundedness ratio dropped below 70% \u2014 agent claims are increasingly unsupported",
+      "conditions": [
+        "groundedness (0.500) lt 0.700"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.5,
+        "hallucination_rate": 0.05,
+        "failure_rate": 0.08,
+        "latency_p95_ms": 3000,
+        "composite_score": 0.6,
+        "tool_failure_rate": 0.05,
+        "citation_quality": 0.85,
+        "memory_f1": 0.8
+      },
+      "triggered_at": "2026-06-27T06:00:06.940227+00:00",
+      "run_id": ""
+    },
+    {
+      "rule_name": "multi-dimensional-degradation-critical",
+      "severity": "critical",
+      "message": "Both verification rate AND groundedness dropped \u2014 systemic agent degradation",
+      "conditions": [
+        "verification_pass_rate (0.550) lt 0.700",
+        "groundedness (0.500) lt 0.650"
+      ],
+      "current_values": {
+        "verification_pass_rate": 0.55,
+        "groundedness": 0.5,
+        "hallucination_rate": 0.05,
+        "failure_rate": 0.08,
+        "latency_p95_ms": 3000,
+        "composite_score": 0.6,
+        "tool_failure_rate": 0.05,
+        "citation_quality": 0.85,
+        "memory_f1": 0.8
+      },
+      "triggered_at": "2026-06-27T06:00:06.940235+00:00",
+      "run_id": ""
+    }
+  ],
+  "by_severity": {
+    "critical": 2,
+    "warning": 2
+  }
+}

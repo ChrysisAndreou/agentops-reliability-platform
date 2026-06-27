@@ -3,14 +3,14 @@ name = "agentops-reliability-platform"
 version = "0.16.0"
 description = "Production-oriented AgentOps reliability and evaluation platform for tool-using AI agents — with SDK for agent instrumentation, live observability dashboard, Slack/Discord/Email alerting, streaming verification, and 15 evaluation benchmarks"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{name = "Chrysis Andreou", email = "chrysis.andreou.ai@gmail.com"}]
 keywords = ["agents", "agentops", "llm", "evaluation", "reliability", "langgraph", "tracing", "retrieval", "opentelemetry"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
