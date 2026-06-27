@@ -17,7 +17,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 14 benchmarks with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Systematic evaluation**: 14 benchmarks with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys. SDK for agent instrumentation (v0.14).
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
 - **LLM-as-Judge evaluation**: Multi-dimensional quality assessment (accuracy, completeness, relevance, safety, citation, groundedness, clarity) using deterministic or real-LLM judges. Model comparison framework with rankings, dimension breakdowns, and cost-performance Pareto analysis.
 - **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
@@ -30,6 +30,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Prompt management & optimization**: versioned prompt registry, A/B comparison against benchmarks, iterative optimization using evaluation feedback, 5 built-in templates, 10th benchmark.
 - **Agent memory evaluation (v0.12)**: Multi-turn conversation memory testing across 5 benchmarks (episodic, semantic, working, cross-conversation, degradation) with 4 configurable memory profiles (perfect, production, development, degraded), recall precision/rate metrics, hallucination detection, and per-type breakdowns; 39 new tests.
 - **Production alerting (v0.13)**: Threshold-based monitoring with 11 built-in alert rules (verification drops, hallucination spikes, latency explosions, multi-dimensional degradation), 4 configurable profiles (strict, production, permissive, silent), pluggable channel providers (console, file, webhook), cooldown-based alert storm prevention, markdown/JSON reporting, and CI-friendly alert evaluation (exit code 2 on critical); 82 new tests.
+- **SDK / client library (v0.14)**: `pip install agentops` — instrument AI agents with decorators (`@agentops.trace()`), context managers (`with agentops.start_run()`), and logging helpers (`log_tool_call`, `log_retrieval`, `log_verification`). Zero-dependency HTTP client (stdlib-only) talks to any AgentOps server. Submits traces, queries results, and handles retries gracefully. 71 new tests covering state models, HTTP client, tracer, CLI commands, and end-to-end workflow integration.
 
 ---
 
@@ -307,6 +308,11 @@ agentops-reliability-platform/
 │   │   ├── state.py        # JSONSchema, SchemaValidationResult, FunctionCallResult
 │   │   ├── validator.py    # SchemaValidator + FunctionCallValidator
 │   │   └── metrics.py      # Schema adherence, function call correctness, composite
+│   ├── sdk/                # Client library for agent instrumentation (v0.14)
+│   │   ├── __init__.py      # Public API: init, trace, start_run, log_*
+│   │   ├── state.py         # SDKConfig, TraceSpan, SpanKind, RunContext, ToolCallRecord
+│   │   ├── client.py        # AgentOpsHTTPClient — stdlib-only HTTP to server
+│   │   └── tracer.py        # AgentOps, decorator, context manager, log helpers
 │   ├── alerting/          # Production alerting — rules, channels, profiles (v0.13)
 │   │   ├── state.py        # AlertCondition, AlertRule, Alert, AlertReport, 4 profiles
 │   │   ├── rules.py        # 11 built-in rules, condition/rule evaluation engine
@@ -319,7 +325,7 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 523 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard, structured_output, memory, alerting)
+├── tests/                 # 594 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard, structured_output, memory, alerting, sdk)
 ├── docker/                # Dockerfile + docker-compose
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
@@ -695,6 +701,78 @@ print(f"Valid: {result.is_valid}, Adherence: {result.adherence_score:.1%}")
 
 ---
 
+### SDK / Client Library (v0.14)
+
+Instrument your AI agents with a lightweight, zero-dependency client library that sends traces to any AgentOps server.
+
+```bash
+# Install
+pip install agentops
+
+# CLI quickstart
+agentops sdk init --endpoint http://localhost:8000
+agentops sdk demo
+agentops sdk query --limit 10
+```
+
+**Python API:**
+
+```python
+import agentops
+
+# Initialize (one-time at startup)
+agentops.init(endpoint="http://localhost:8000", project_name="my-agent")
+
+# Option 1: Decorator — trace any function as an agent run
+@agentops.trace(model="gpt-4o")
+async def my_agent(task: str) -> str:
+    agentops.log_retrieval(query=task, chunks=["doc1", "doc2"])
+    agentops.log_tool_call("search", {"q": task}, tool_output="result")
+    agentops.log_verification(passed=True, grounded_claims=["claim1"])
+    return "answer"
+
+# Option 2: Context manager — explicit trace boundaries
+with agentops.start_run(task="Analyze deployment logs") as run:
+    agentops.log_tool_call("fetch_logs", {"service": "api"})
+    agentops.log_verification(passed=True)
+    run.final_answer = "3 errors found"
+    run.verification_passed = True
+# Trace auto-submitted on context exit
+
+# Query traces from the server
+traces = agentops.list_traces(verification_passed=True, limit=10)
+```
+
+**Key features:**
+- **`@agentops.trace()` decorator**: Wraps any sync or async function as a traced agent run. First argument becomes the task description. Exceptions are captured as failures.
+- **`agentops.start_run()` context manager**: Explicit trace boundaries with full control over metadata. Auto-finishes and submits on exit.
+- **Logging helpers**: `log_tool_call()`, `log_retrieval()`, `log_verification()` — safe to call anywhere, become no-ops when no run is active.
+- **Query API**: `list_traces()`, `get_trace()`, `get_replay()`, `get_stats()`, `list_evals()` — typed wrappers around the server API.
+- **Span tree**: Every tool call, retrieval, and verification creates a child span under the root run span for full observability.
+- **Resilient**: Connection failures never crash agent code. Traces are submitted best-effort. Retries with exponential backoff (configurable).
+- **Zero-dependency HTTP**: Uses only stdlib `urllib` — no `requests`, `httpx`, or `aiohttp` required.
+- **CLI companion**: `agentops sdk init/demo/query/status` for quick testing and debugging.
+
+**SDK Architecture:**
+
+```
+User Agent Code
+    │
+    ├── @agentops.trace()          ← Decorator: wraps function as traced run
+    │       │
+    ├── agentops.start_run()       ← Context manager: explicit boundaries
+    │       │
+    ├── agentops.log_tool_call()   ← Logging: records tool invocations
+    ├── agentops.log_retrieval()   ← Logging: records retrieval ops
+    ├── agentops.log_verification()← Logging: records verification decisions
+    │       │
+    ▼       ▼
+RunContext (in-memory) → Span Tree (root + children)
+    │
+    ▼
+AgentOpsHTTPClient → POST /api/run → AgentOps Server → Trace Store (SQLite)
+```
+
 ### Production Alerting (v0.13)
 
 Completes the observability loop: collect (traces) → evaluate (benchmarks) → visualize (dashboard) → **alert (this module)**. Teams get notified when agent quality degrades before users notice.
@@ -778,9 +856,10 @@ if report.has_critical:
 - [x] Structured output & function calling evaluation — JSON Schema validation, tool call quality scoring, 2 benchmarks (10 tasks), 56 tests (v0.11)
 - [x] Agent memory evaluation — multi-turn conversation recall, 5 benchmarks, 4 profiles, hallucination detection, 39 tests (v0.12)
 - [x] Production alerting — 11 rules, 3 channels, 4 profiles, 5 eval scenarios, cooldowns, CI integration, 82 tests (v0.13)
+- [x] SDK / client library — decorators, context managers, logging helpers, HTTP client, CLI, 71 tests (v0.14)
 - [ ] Streaming verification (partial response checking)
-- [ ] SDK/client library for agent instrumentation (`pip install agentops`)
-- [ ] Alerting integrations (Slack, email, webhook)
+- [ ] Alerting integrations (Slack, email, turnkey webhook)
+- [ ] SDK package published to PyPI (`pip install agentops`)
 
 ---
 

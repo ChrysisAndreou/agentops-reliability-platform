@@ -2141,5 +2141,170 @@ def alert_eval(
     print(f"\nReports saved to: {out}/")
 
 
+# ── SDK commands ────────────────────────────────────────────────────────
+
+sdk_app = typer.Typer(name="sdk", help="AgentOps SDK client — instrument agents from your code")
+app.add_typer(sdk_app)
+
+
+@sdk_app.command("status")
+def sdk_status():
+    """Check SDK connection status to the AgentOps server."""
+    from agentops.sdk.tracer import _get_client
+
+    aops = _get_client()
+    if aops is None or not aops.is_ready:
+        print("SDK: not initialized or not connected.")
+        print("Run 'agentops sdk init' first and ensure the server is running.")
+        raise typer.Exit(code=1)
+
+    stats = aops.get_stats()
+    print(f"SDK: connected to {aops.config.endpoint}")
+    print(f"Project: {aops.config.project_name}")
+    print(f"Enabled: {aops.config.enabled}")
+    if "error" not in stats:
+        print(f"Server stats: {json.dumps(stats, indent=2)}")
+
+
+@sdk_app.command("init")
+def sdk_init(
+    endpoint: str = typer.Option("http://localhost:8000", "--endpoint", "-e",
+                                  help="AgentOps API server URL"),
+    project_name: str = typer.Option("default", "--project", "-p",
+                                      help="Project name for trace grouping"),
+    api_key: str | None = typer.Option(None, "--api-key", "-k",
+                                        help="API key for authenticated servers"),
+):
+    """Initialize the AgentOps SDK and test connectivity."""
+    from agentops.sdk.tracer import AgentOps
+
+    aops = AgentOps()
+    ok = aops.init(endpoint=endpoint, api_key=api_key, project_name=project_name)
+
+    if ok:
+        print(f"SDK initialized successfully.")
+        print(f"  Endpoint:  {endpoint}")
+        print(f"  Project:   {project_name}")
+        print(f"  Status:    connected")
+    else:
+        print(f"SDK initialized but server unreachable at {endpoint}")
+        print("Agent tracing will work locally. Traces will be submitted when the server becomes available.")
+        raise typer.Exit(code=1)
+
+
+@sdk_app.command("demo")
+def sdk_demo(
+    task: str = typer.Option("How do I enable two-factor authentication?", "--task", "-t",
+                              help="Task to demonstrate"),
+    endpoint: str = typer.Option("http://localhost:8000", "--endpoint", "-e"),
+):
+    """Run a demo agent with full SDK instrumentation."""
+    from agentops.sdk.tracer import AgentOps
+
+    aops = AgentOps()
+    aops.init(endpoint=endpoint)
+
+    print(f"AgentOps SDK Demo")
+    print(f"{'=' * 50}")
+    print(f"Task: {task}")
+
+    with aops.start_run(task=task, model="demo-agent") as run:
+        # Simulate planning
+        run.plan_steps = ["Search documentation", "Execute tool if needed", "Verify claims", "Respond with citations"]
+
+        # Simulate retrieval
+        aops.log_retrieval(
+            query=task,
+            chunks=["CloudDeploy supports 2FA via TOTP and SMS", "Enable 2FA in Settings > Security"],
+            scores=[0.92, 0.87],
+            method="hybrid",
+        )
+
+        # Simulate tool call
+        aops.log_tool_call(
+            tool_name="search_docs",
+            tool_input={"query": "two-factor authentication setup"},
+            tool_output="Found 2 relevant documents about 2FA configuration",
+            success=True,
+        )
+
+        # Simulate verification
+        aops.log_verification(
+            passed=True,
+            notes="All claims grounded in CloudDeploy documentation",
+            grounded_claims=[
+                "2FA is supported via TOTP and SMS",
+                "Configuration is in Settings > Security",
+            ],
+        )
+
+        run.final_answer = (
+            "To enable two-factor authentication on CloudDeploy:\n"
+            "1. Navigate to Settings > Security\n"
+            "2. Select your preferred 2FA method (TOTP authenticator app or SMS)\n"
+            "3. Follow the setup wizard to link your device\n"
+            "For more details, see the CloudDeploy Security documentation."
+        )
+        run.verification_passed = True
+
+    print(f"\nRun complete: {run.run_id}")
+    print(f"Verification: {'PASSED' if run.verification_passed else 'FAILED'}")
+    print(f"Tool calls: {len(run.tool_calls)}")
+    print(f"Retrievals: {len(run.retrievals)}")
+    print(f"Latency: {run.latency_ms:.0f}ms")
+    print(f"\nFinal Answer:\n{run.final_answer}")
+
+    # Query traces
+    if aops.is_ready:
+        traces = aops.list_traces(limit=5)
+        print(f"\nServer traces: {len(traces)} found")
+
+
+@sdk_app.command("query")
+def sdk_query(
+    endpoint: str = typer.Option("http://localhost:8000", "--endpoint", "-e"),
+    limit: int = typer.Option(10, "--limit", "-n", help="Max traces to return"),
+    verification_filter: str | None = typer.Option(
+        None, "--verification", "-v",
+        help="Filter: 'passed' or 'failed'"
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Query traces and stats from the AgentOps server."""
+    from agentops.sdk.tracer import AgentOps
+
+    aops = AgentOps()
+    ok = aops.init(endpoint=endpoint)
+    if not ok:
+        print(f"Cannot connect to {endpoint}")
+        raise typer.Exit(code=1)
+
+    vf = None
+    if verification_filter == "passed":
+        vf = True
+    elif verification_filter == "failed":
+        vf = False
+
+    # Get stats
+    stats = aops.get_stats()
+    traces = aops.list_traces(verification_passed=vf, limit=limit)
+
+    if json_output:
+        print(json.dumps({"stats": stats, "traces": traces}, indent=2))
+        return
+
+    print(f"AgentOps Server: {endpoint}")
+    print(f"{'=' * 50}")
+    if "total_runs" in stats:
+        print(f"Total runs: {stats.get('total_runs', '?')}")
+        print(f"Pass rate:  {stats.get('verification_pass_rate', '?')}")
+    print(f"\nTraces (limit={limit}):")
+    if not traces:
+        print("  No traces found. Run 'agentops sdk demo' to generate some.")
+    for t in traces:
+        verified = "✓" if t.get("verification_passed") else "✗"
+        print(f"  [{verified}] {t.get('run_id', '?')} | {t.get('task', '?')[:60]} | {t.get('latency_ms', 0):.0f}ms")
+
+
 if __name__ == "__main__":
     app()
