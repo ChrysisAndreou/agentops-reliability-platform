@@ -5,6 +5,7 @@
 [![CI](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-706%20passed-brightgreen)](https://github.com/ChrysisAndreou/agentops-reliability-platform)
 
 ---
 
@@ -839,6 +840,62 @@ if report.has_critical:
 
 **82 new tests** — state models, rule evaluation (single + multi-condition AND semantics), AlertManager (evaluate, evaluate_static, cooldowns, profiles, custom config), channels (console, file, webhook, factory), integration (lifecycle, JSON roundtrip, markdown), edge cases (empty/zero/boundary values, float precision).
 
+### Streaming Verification (v0.15)
+
+Real-time claim checking during agent generation. Intercepts streaming LLM output at the chunk level, extracts factual claims as they emerge, verifies each against evidence, and can abort generation mid-stream when hallucination exceeds configured thresholds.
+
+```bash
+# Demonstrate streaming verification
+agentops streaming demo --strategy threshold --threshold 0.30
+
+# Run evaluation across 5 scenarios
+agentops streaming eval --profile production --output eval_results/streaming/
+
+# Quick claim check
+agentops streaming check --text "CloudDeploy supports Docker Swarm for orchestration."
+```
+
+**Python API:**
+
+```python
+from agentops.streaming import (
+    StreamingConfig, StreamingInterceptor, VerificationStrategy
+)
+
+evidence = {
+    "doc-1": "CloudDeploy uses Kubernetes with Helm charts.",
+    "doc-2": "Python 3.10+ is required.",
+}
+
+config = StreamingConfig(
+    strategy=VerificationStrategy.STRICT,
+    abort_threshold=0.30,
+)
+interceptor = StreamingInterceptor(config=config, evidence=evidence)
+interceptor.start(task="Validate deployment claims")
+
+# Process streaming chunks
+interceptor.process_chunk("CloudDeploy uses Kubernetes. ")  # grounded
+interceptor.process_chunk("Docker Swarm is used. ")         # ungrounded → abort!
+
+if interceptor.is_aborted():
+    print(f"Stream aborted: {interceptor.abort_reason}")
+
+metrics = interceptor.get_metrics()
+# {'total_claims': 2, 'grounded_claims': 1, 'groundedness': 0.50, ...}
+```
+
+**Key features:**
+- **4 verification strategies**: STRICT (abort on first failure), THRESHOLD (abort when ungrounded rate exceeds limit), LENIENT (flag only), ACCUMULATING (buffer for context)
+- **Claim extraction**: Sentence-level parsing, handles chunk boundaries, filters non-claims (greetings, questions, transitions)
+- **Entity verification**: Detects hallucinated versions, paths, URLs, CamelCase identifiers
+- **Generator wrapping**: Transparent `wrap_sync()` / `wrap_async()` for any streaming LLM output
+- **Simulated streams**: `simulate_stream()` for deterministic testing without a real LLM
+- **3 eval profiles**: strict, production, permissive — 5 evaluation scenarios in CLI
+- **Zero-dependency**: Pure Python, no external deps
+
+**112 new tests** — state models, claim extraction (sentence/chunk boundary/entity/non-claim filtering), verification (grounded/ungrounded/batch/entity/abort logic), interceptor (process/simulate/sync+async generators/e2e scenarios).
+
 ---
 
 ## Roadmap
@@ -857,7 +914,7 @@ if report.has_critical:
 - [x] Agent memory evaluation — multi-turn conversation recall, 5 benchmarks, 4 profiles, hallucination detection, 39 tests (v0.12)
 - [x] Production alerting — 11 rules, 3 channels, 4 profiles, 5 eval scenarios, cooldowns, CI integration, 82 tests (v0.13)
 - [x] SDK / client library — decorators, context managers, logging helpers, HTTP client, CLI, 71 tests (v0.14)
-- [ ] Streaming verification (partial response checking)
+- [x] Streaming verification — real-time claim checking, 4 strategies, abort-on-hallucination, sync/async generators, CLI eval, 112 tests (v0.15)
 - [ ] Alerting integrations (Slack, email, turnkey webhook)
 - [ ] SDK package published to PyPI (`pip install agentops`)
 
