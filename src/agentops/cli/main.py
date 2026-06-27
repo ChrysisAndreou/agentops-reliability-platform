@@ -2306,5 +2306,329 @@ def sdk_query(
         print(f"  [{verified}] {t.get('run_id', '?')} | {t.get('task', '?')[:60]} | {t.get('latency_ms', 0):.0f}ms")
 
 
+# ── Streaming Verification ────────────────────────────────────────
+
+streaming_app = typer.Typer(
+    name="streaming",
+    help="Streaming verification — real-time claim checking during agent generation",
+)
+app.add_typer(streaming_app)
+
+
+@streaming_app.command("demo")
+def streaming_demo(
+    strategy: str = typer.Option(
+        "threshold", "--strategy", "-s",
+        help="Verification strategy: strict, threshold, lenient, accumulating"
+    ),
+    abort_threshold: float = typer.Option(
+        0.30, "--threshold", "-t",
+        help="Abort when ungrounded rate exceeds this (0.0-1.0)"
+    ),
+):
+    """Demonstrate streaming verification with simulated agent output."""
+    from agentops.streaming import (
+        StreamingConfig,
+        StreamingInterceptor,
+        VerificationStrategy,
+    )
+
+    strategy_map = {
+        "strict": VerificationStrategy.STRICT,
+        "threshold": VerificationStrategy.THRESHOLD,
+        "lenient": VerificationStrategy.LENIENT,
+        "accumulating": VerificationStrategy.ACCUMULATING,
+    }
+    if strategy not in strategy_map:
+        print(f"Unknown strategy: {strategy}. Use: {', '.join(strategy_map)}")
+        raise typer.Exit(code=1)
+
+    config = StreamingConfig(
+        strategy=strategy_map[strategy],
+        abort_threshold=abort_threshold,
+    )
+
+    # Sample evidence (CloudDeploy documentation)
+    evidence = {
+        "doc-1": "CloudDeploy supports two-factor authentication (2FA) via TOTP authenticator apps and SMS.",
+        "doc-2": "To enable 2FA, navigate to Settings > Security and select your preferred method.",
+        "doc-3": "The deployment pipeline runs on Kubernetes with Helm charts for configuration.",
+        "doc-4": "CloudDeploy requires Python 3.10 or later. The CLI is installed via pip.",
+        "doc-5": "Monitoring is provided through Prometheus metrics and Grafana dashboards.",
+    }
+
+    interceptor = StreamingInterceptor(config=config, evidence=evidence)
+
+    # Simulated streaming agent output — some grounded, some hallucinated
+    chunks = [
+        "CloudDeploy supports ",
+        "two-factor authentication through TOTP apps ",
+        "and SMS messages. ",
+        "To enable 2FA, navigate to Settings > Security. ",
+        "The deployment system uses ",
+        "Docker Swarm for container orchestration. ",  # HALLUCINATION (should be Kubernetes)
+        "CloudDeploy requires Python 3.10 or later. ",
+        "You can also configure 2FA through biometric authentication. ",  # HALLUCINATION
+        "Monitoring is available via Prometheus and Grafana.",
+    ]
+
+    print(f"Streaming Verification Demo")
+    print(f"{'=' * 60}")
+    print(f"Strategy: {strategy}")
+    print(f"Abort threshold: {abort_threshold}")
+    print(f"Evidence chunks: {len(evidence)}")
+    print(f"Simulated chunks: {len(chunks)}")
+    print(f"{'=' * 60}")
+    print(f"\nProcessing stream...\n")
+
+    result = interceptor.simulate_stream(chunks, task="Explain CloudDeploy features")
+
+    print(f"\n{'=' * 60}")
+    print(f"RESULTS")
+    print(f"{'=' * 60}")
+
+    metrics = result["metrics"]
+    print(f"Chunks processed:   {metrics.get('chunks_processed', 0)}")
+    print(f"Claims extracted:   {metrics.get('total_claims', 0)}")
+    print(f"Grounded claims:    {metrics.get('grounded_claims', 0)}")
+    print(f"Ungrounded claims:  {metrics.get('ungrounded_claims', 0)}")
+    print(f"Groundedness:       {metrics.get('groundedness', 0):.2%}")
+    print(f"Stream aborted:     {result['aborted']}")
+    if result["aborted"]:
+        print(f"Abort reason:       {result['abort_reason']}")
+        print(f"Aborted at chunk:   {result['abort_at_chunk']}")
+    else:
+        print(f"Stream completed normally")
+
+    # Show what was accumulated
+    output = result["accumulated_output"]
+    if output:
+        print(f"\nAccumulated output ({len(output)} chars):")
+        print(output[:500])
+
+
+@streaming_app.command("eval")
+def streaming_eval(
+    profile: str = typer.Option(
+        "production", "--profile", "-p",
+        help="Evaluation profile: strict, production, permissive"
+    ),
+    output_path: str | None = typer.Option(
+        None, "--output", "-o",
+        help="Output directory for evaluation report"
+    ),
+):
+    """Run streaming verification evaluation across scenarios."""
+    import json
+    import time
+    from pathlib import Path
+    from agentops.streaming import (
+        StreamingConfig,
+        StreamingInterceptor,
+        StreamingVerificationResult,
+        VerificationStrategy,
+    )
+
+    profiles = {
+        "strict": StreamingConfig(
+            strategy=VerificationStrategy.STRICT,
+            abort_threshold=0.0,
+            abort_on_contradiction=True,
+        ),
+        "production": StreamingConfig(
+            strategy=VerificationStrategy.THRESHOLD,
+            abort_threshold=0.30,
+            abort_on_contradiction=True,
+        ),
+        "permissive": StreamingConfig(
+            strategy=VerificationStrategy.LENIENT,
+            abort_threshold=0.50,
+            abort_on_contradiction=False,
+        ),
+    }
+
+    if profile not in profiles:
+        print(f"Unknown profile: {profile}. Use: {', '.join(profiles)}")
+        raise typer.Exit(code=1)
+
+    config = profiles[profile]
+
+    # Evidence store
+    evidence = {
+        "doc-1": "CloudDeploy supports two-factor authentication via TOTP and SMS. "
+                 "Navigate to Settings > Security to configure 2FA.",
+        "doc-2": "The deployment pipeline uses Kubernetes with Helm charts. "
+                 "All services run in containers managed by Kubernetes.",
+        "doc-3": "CloudDeploy requires Python 3.10 or later. Install the CLI via pip.",
+        "doc-4": "Monitoring is provided through Prometheus metrics and Grafana dashboards. "
+                 "Alerting is configured in alertmanager.yml.",
+        "doc-5": "Rate limits: 1000 requests per minute for API, 100 requests per minute for webhooks.",
+    }
+
+    # Evaluation scenarios
+    scenarios = [
+        {
+            "name": "fully-grounded",
+            "description": "All claims match evidence — no abort expected",
+            "chunks": [
+                "CloudDeploy supports two-factor authentication ",
+                "via TOTP and SMS methods. ",
+                "To configure 2FA, navigate to Settings > Security. ",
+                "The deployment pipeline uses Kubernetes with Helm charts. ",
+                "You need Python 3.10 or later to use the CLI.",
+            ],
+            "expected_abort": False,
+        },
+        {
+            "name": "partial-hallucination",
+            "description": "2 of 5 claims are ungrounded — abort depends on strategy",
+            "chunks": [
+                "CloudDeploy supports 2FA via TOTP and SMS. ",
+                "The platform uses Docker Compose for orchestration. ",  # HALLUCINATION
+                "Monitoring is via Prometheus and Grafana. ",
+                "Rate limits are 5000 requests per minute. ",  # HALLUCINATION
+                "You need Python 3.10 or later.",
+            ],
+            "expected_abort": True,  # threshold > 0.30 should abort
+        },
+        {
+            "name": "heavy-hallucination",
+            "description": "3 of 4 claims are hallucinated — all strategies abort",
+            "chunks": [
+                "CloudDeploy uses AWS ECS for container orchestration. ",  # HALLUCINATION
+                "The platform requires Node.js 18 or later. ",  # HALLUCINATION
+                "Support is available via Slack and Discord. ",  # HALLUCINATION
+                "Monitoring is provided through Prometheus and Grafana.",
+            ],
+            "expected_abort": True,
+        },
+        {
+            "name": "contradiction",
+            "description": "Claim directly contradicts evidence",
+            "chunks": [
+                "CloudDeploy supports 2FA via TOTP and SMS. ",
+                "Two-factor authentication is NOT supported on CloudDeploy. ",  # CONTRADICTION
+                "Monitoring is via Prometheus and Grafana.",
+            ],
+            "expected_abort": True,
+        },
+        {
+            "name": "entity-hallucination",
+            "description": "Hallucinated technical identifiers",
+            "chunks": [
+                "CloudDeploy supports 2FA via TOTP and SMS. ",
+                "Use the clouddeploy-cli v3.2.1 tool for configuration. ",  # Hallucinated version
+                "The deployment uses Kubernetes with Helm charts.",
+            ],
+            "expected_abort": False,  # Only one hallucinated entity
+        },
+    ]
+
+    print(f"Streaming Verification Evaluation")
+    print(f"{'=' * 60}")
+    print(f"Profile: {profile}")
+    print(f"Strategy: {config.strategy.value}")
+    print(f"Scenarios: {len(scenarios)}")
+    print(f"{'=' * 60}\n")
+
+    results = []
+    passed = 0
+    failed = 0
+
+    for i, scenario in enumerate(scenarios, 1):
+        interceptor = StreamingInterceptor(config=config, evidence=evidence)
+        t0 = time.time()
+        result = interceptor.simulate_stream(
+            scenario["chunks"],
+            run_id=f"eval-{scenario['name']}",
+            task=scenario["description"],
+        )
+        elapsed_ms = (time.time() - t0) * 1000
+
+        metrics = result["metrics"]
+        aborted = result["aborted"]
+        expected = scenario["expected_abort"]
+
+        match = "✓" if aborted == expected else "✗"
+        if aborted == expected:
+            passed += 1
+        else:
+            failed += 1
+
+        print(f"[{match}] {i}. {scenario['name']}")
+        print(f"    Expected abort: {expected} | Got: {aborted}")
+        print(f"    Claims: {metrics.get('total_claims', 0)} | Grounded: {metrics.get('grounded_claims', 0)} | Groundedness: {metrics.get('groundedness', 0):.2%}")
+        if aborted:
+            print(f"    Abort reason: {result['abort_reason']} at chunk {result['abort_at_chunk']}")
+        print(f"    Latency: {elapsed_ms:.1f}ms")
+        print()
+
+        results.append({
+            "scenario": scenario["name"],
+            "expected_abort": expected,
+            "actual_abort": aborted,
+            "match": aborted == expected,
+            "metrics": metrics,
+            "elapsed_ms": elapsed_ms,
+        })
+
+    print(f"{'=' * 60}")
+    print(f"RESULTS: {passed}/{len(scenarios)} passed ({passed + failed} total)")
+    print(f"{'=' * 60}")
+
+    if output_path:
+        out_dir = Path(output_path)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        report_path = out_dir / f"streaming_eval_{profile}.json"
+        with open(report_path, "w") as f:
+            json.dump(results, f, indent=2, default=str)
+        print(f"Report saved to {report_path}")
+
+    if failed > 0:
+        raise typer.Exit(code=2)
+
+
+@streaming_app.command("check")
+def streaming_check(
+    text: str = typer.Option(..., "--text", "-t", help="Text to verify against evidence"),
+    strategy: str = typer.Option("threshold", "--strategy", "-s"),
+):
+    """Quickly check if a piece of text is grounded in evidence."""
+    from agentops.streaming import (
+        StreamingConfig,
+        StreamingInterceptor,
+        StreamingClaim,
+        VerificationStrategy,
+    )
+
+    strategy_map = {
+        "strict": VerificationStrategy.STRICT,
+        "threshold": VerificationStrategy.THRESHOLD,
+        "lenient": VerificationStrategy.LENIENT,
+        "accumulating": VerificationStrategy.ACCUMULATING,
+    }
+
+    config = StreamingConfig(strategy=strategy_map.get(strategy, VerificationStrategy.THRESHOLD))
+
+    # Default evidence
+    evidence = {
+        "doc-1": "CloudDeploy supports 2FA via TOTP and SMS. Configure in Settings > Security.",
+        "doc-2": "Deployment uses Kubernetes with Helm charts. Python 3.10+ required.",
+        "doc-3": "Monitoring via Prometheus and Grafana dashboards.",
+    }
+
+    interceptor = StreamingInterceptor(config=config, evidence=evidence)
+    interceptor.start(task="Check claim", run_id="check-1")
+    interceptor.process_chunk(text, is_final=True)
+
+    metrics = interceptor.get_metrics()
+    print(f"Text: {text[:100]}")
+    print(f"Claims: {metrics.get('total_claims', 0)}")
+    print(f"Grounded: {metrics.get('grounded_claims', 0)}")
+    print(f"Ungrounded: {metrics.get('ungrounded_claims', 0)}")
+    print(f"Groundedness: {metrics.get('groundedness', 0):.2%}")
+    print(f"Aborted: {interceptor.is_aborted()}")
+
+
 if __name__ == "__main__":
     app()
