@@ -25,6 +25,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Regression testing**: Save benchmark results as versioned baselines and run CI-friendly regression checks that detect when agent quality drops below configured thresholds across all 8 benchmarks.
 - **Failure classification**: automatic pattern detection for 8 failure modes.
 - **Cost & latency budget gates**: configurable per-run and per-step cost/latency limits with graceful degradation.
+- **Live observability dashboard**: WebSocket-powered HTML dashboard with Chart.js visualizations, live trace streaming, failure analysis, and interactive UI (32 tests, v0.10).
 - **Prompt management & optimization**: versioned prompt registry, A/B comparison against benchmarks, iterative optimization using evaluation feedback, 5 built-in templates, 10th benchmark.
 
 ---
@@ -287,6 +288,13 @@ agentops-reliability-platform/
 │   │   ├── store.py       # SQLite trace store
 │   │   ├── classifier.py  # 8-pattern failure taxonomy
 │   │   └── opentelemetry.py  # OTLP span/metric export (optional)
+│   ├── prompts/            # Prompt management & optimization (v0.9)
+│   │   ├── state.py        # PromptTemplate, PromptVersion, ComparisonConfig
+│   │   ├── registry.py     # Versioned prompt registry with diff + rollback
+│   │   └── comparator.py   # A/B comparison + iterative optimizer
+│   ├── dashboard/          # Live observability dashboard (v0.10)
+│   │   ├── server.py       # FastAPI + WebSocket + Chart.js HTML dashboard
+│   │   └── templates/      # Jinja2 HTML templates
 │   ├── api/               # FastAPI server
 │   │   └── app.py         # REST endpoints
 │   └── cli/               # CLI (Typer)
@@ -294,7 +302,7 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 264 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark)\n├── docker/                # Dockerfile + docker-compose
+├── tests/                 # 346 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard)\n├── docker/                # Dockerfile + docker-compose
 ├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
@@ -584,6 +592,40 @@ reg.save("prompts.json")
 
 ---
 
+### Live Observability Dashboard (v0.10)
+
+A production-grade web dashboard with WebSocket-powered live trace streaming, interactive charts, and failure pattern analysis. Built for teams that need real-time visibility into agent reliability without leaving the browser.
+
+```bash
+# Start the dashboard
+agentops dashboard --port 8000
+
+# Open http://localhost:8000 in your browser
+```
+
+**Dashboard features:**
+- **Live trace table** with auto-refresh via WebSocket — see agents execute in real time
+- **Interactive charts** (Chart.js): verification pass/fail doughnut, latency bar chart, failure category breakdown
+- **Summary cards**: total runs, pass rate, failure rate, average latency — updating live
+- **Failure analysis**: automatic categorization of failure patterns (hallucination, tool_error, timeout, retrieval_failure)
+- **Eval run viewer**: browse evaluation run history
+- **Dark-themed professional UI**: sidebar navigation, GitHub-style color scheme
+- **WebSocket streaming**: `/ws` endpoint for real-time stats + trace updates
+- **REST API**: `/api/dashboard/stats`, `/api/dashboard/traces`, `/api/dashboard/evals`, `/api/dashboard/failures`
+
+```python
+from agentops.dashboard import create_dashboard_app
+from agentops.tracing.store import TraceStore
+
+store = TraceStore("traces.db")
+app = create_dashboard_app(trace_store=store)
+# uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+**32 new tests** — dashboard server creation, health, stats (empty + populated), traces (empty + filtered + limited), evals, failure analysis, HTML rendering, WebSocket connectivity + heartbeat, broadcast, and CLI registration.
+
+---
+
 ## Roadmap
 
 - [x] Kubernetes Deployment — production-grade manifests with HPA, TLS, network policies, Terraform
@@ -595,9 +637,10 @@ reg.save("prompts.json")
 - [x] Regression testing — baseline persistence, CI-friendly regression checks, per-metric thresholds, deterministic simulated agent (v0.7)
 - [x] LLM-as-Judge evaluation — multi-dimensional quality assessment, model comparison framework, Pareto analysis, 9th benchmark (v0.8)
 - [x] Prompt management & optimization — versioned registry, A/B comparison, iterative optimization, 5 templates, 10th benchmark (v0.9)
+- [x] Live observability dashboard — WebSocket streaming, Chart.js visualizations, failure analysis, dark UI, 32 tests (v0.10)
 - [ ] Streaming verification (partial response checking)
-- [ ] Web dashboard for trace exploration
-- [ ] Integration tests with local LLM (Ollama) for CI reproducibility
+- [ ] SDK/client library for agent instrumentation (`pip install agentops`)
+- [ ] Alerting integrations (Slack, email, webhook)
 
 ---
 

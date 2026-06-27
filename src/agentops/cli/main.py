@@ -279,6 +279,52 @@ def trace(run_id: str = typer.Argument(..., help="Run ID to inspect"), project_d
 
 
 @app.command()
+def dashboard(
+    port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
+    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind to"),
+):
+    """Start the live observability dashboard server.
+
+    Launches a FastAPI server with:
+    - Interactive HTML dashboard at /
+    - WebSocket live trace streaming at /ws
+    - REST API at /api/dashboard/*
+    - Full agent execution API at /api/*
+
+    Open http://localhost:PORT in your browser to see the dashboard.
+    """
+    import uvicorn
+    from pathlib import Path
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    db_path = d / "traces.db"
+
+    from agentops.tracing.store import TraceStore
+    trace_store = TraceStore(str(db_path)) if db_path.exists() else TraceStore()
+
+    from agentops.dashboard import create_dashboard_app
+    web_app = create_dashboard_app(trace_store=trace_store)
+
+    print(f"  AgentOps Dashboard v0.10.0")
+    print(f"  → Open http://localhost:{port} in your browser")
+    print(f"  → WebSocket: ws://localhost:{port}/ws")
+    print(f"  → API: http://localhost:{port}/api/dashboard/stats")
+    print()
+
+    config = uvicorn.Config(web_app, host=host, port=port, log_level="info")
+    server = uvicorn.Server(config)
+
+    async def _start():
+        await server.serve()
+
+    try:
+        asyncio.run(_start())
+    except KeyboardInterrupt:
+        print("\nDashboard stopped.")
+
+
+@app.command()
 def stats(project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory")):
     """Show aggregate statistics."""
     from agentops.tracing.store import TraceStore
