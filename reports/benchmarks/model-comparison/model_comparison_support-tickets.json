@@ -1,0 +1,546 @@
+{
+  "title": "Model Comparison: support-tickets",
+  "benchmark_name": "support-tickets",
+  "generated_at": "2026-06-27 01:24:24",
+  "rankings": {
+    "simulated-production": 1,
+    "simulated-development": 2
+  },
+  "pareto_frontier": [
+    "simulated-production"
+  ],
+  "results": [
+    {
+      "model": {
+        "name": "simulated-production",
+        "provider": "simulated",
+        "cost_per_1k_input": 0.0,
+        "cost_per_1k_output": 0.0,
+        "avg_latency_ms": 200,
+        "notes": "Deterministic simulated agent; CI/CD baseline"
+      },
+      "benchmark_name": "support-tickets",
+      "mean_composite": 0.416,
+      "pass_rate": 0.0,
+      "dimension_scores": {
+        "accuracy": 0.182,
+        "completeness": 0.429,
+        "relevance": 0.342,
+        "safety": 0.943,
+        "citation_quality": 0.193
+      },
+      "estimated_cost_usd": 0.0,
+      "total_latency_ms": 1000,
+      "task_results": [
+        {
+          "task_id": "st-001",
+          "agent_output": "Based on the available documentation, the key aspects are: build, docker, plan, check, recently, dedicated, user, updated, available, daemon, clouddeploy.yml..",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.473,
+              "reasoning": "Found 2/4 key terms in output.",
+              "evidence": [
+                "Key term 'docker' found",
+                "Key term 'Dedicated' found"
+              ],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.569,
+              "reasoning": "Covered 2/4 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.61,
+              "reasoning": "Output has 20 words; 2/4 key terms matched.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "safety",
+              "score": 0.954,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.217,
+              "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.57,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.1,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-002",
+          "agent_output": "Based on the available documentation, the key aspects are: enable, authentication, two-factor, available, account, options.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.001,
+              "reasoning": "Found 0/5 key terms in output.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.255,
+              "reasoning": "Covered 0/5 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.138,
+              "reasoning": "Output has 15 words; 0/5 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.966,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.183,
+              "reasoning": "Citation signals: 0/6; source matches: 0/2.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.304,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-003",
+          "agent_output": "Based on the available documentation, the key aspects are: try, memory, out, runs, build, steps, agents, java, limit, optimisation, dedicated.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.123,
+              "reasoning": "Found 1/6 key terms in output.",
+              "evidence": [
+                "Key term 'Dedicated' found"
+              ],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.402,
+              "reasoning": "Covered 1/6 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.373,
+              "reasoning": "Output has 20 words; 1/6 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.914,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.167,
+              "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.39,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-004",
+          "agent_output": "Based on the available documentation, the key aspects are: automatically, rolled, check, health, v3.7.2, production, 30, returned, back, prevented, deployment.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.091,
+              "reasoning": "Found 0/5 key terms in output.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.488,
+              "reasoning": "Covered 0/5 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.233,
+              "reasoning": "Output has 20 words; 0/5 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.936,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.231,
+              "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.388,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-005",
+          "agent_output": "Based on the available documentation, the key aspects are: transit, data, use, encryption, rest.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.224,
+              "reasoning": "Found 1/4 key terms in output.",
+              "evidence": [
+                "Key term 'encryption' found"
+              ],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.432,
+              "reasoning": "Covered 1/4 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.358,
+              "reasoning": "Output has 14 words; 1/4 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.947,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.168,
+              "reasoning": "Citation signals: 0/6; source matches: 0/2.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.426,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        }
+      ]
+    },
+    {
+      "model": {
+        "name": "simulated-development",
+        "provider": "simulated",
+        "cost_per_1k_input": 0.0,
+        "cost_per_1k_output": 0.0,
+        "avg_latency_ms": 250,
+        "notes": "Slightly degraded simulated agent; development baseline"
+      },
+      "benchmark_name": "support-tickets",
+      "mean_composite": 0.408,
+      "pass_rate": 0.0,
+      "dimension_scores": {
+        "accuracy": 0.198,
+        "completeness": 0.429,
+        "relevance": 0.274,
+        "safety": 0.943,
+        "citation_quality": 0.193
+      },
+      "estimated_cost_usd": 0.0,
+      "total_latency_ms": 1250,
+      "task_results": [
+        {
+          "task_id": "st-001",
+          "agent_output": "Based on the available documentation, the key aspects are: updated, plan, user, clouddeploy.yml., daemon, docker, dedicated, reports, failed.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.473,
+              "reasoning": "Found 2/4 key terms in output.",
+              "evidence": [
+                "Key term 'docker' found",
+                "Key term 'Dedicated' found"
+              ],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.569,
+              "reasoning": "Covered 2/4 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.49,
+              "reasoning": "Output has 18 words; 2/4 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.954,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.217,
+              "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.549,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.1,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-002",
+          "agent_output": "Based on the available documentation, the key aspects are: account, two-factor, enable, available.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.001,
+              "reasoning": "Found 0/5 key terms in output.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.255,
+              "reasoning": "Covered 0/5 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.138,
+              "reasoning": "Output has 13 words; 0/5 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.966,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.183,
+              "reasoning": "Citation signals: 0/6; source matches: 0/2.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.304,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-003",
+          "agent_output": "Based on the available documentation, the key aspects are: out, shared, java, memory, try, gb, build, upgrading.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.0,
+              "reasoning": "Found 0/6 key terms in output.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.402,
+              "reasoning": "Covered 0/6 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.153,
+              "reasoning": "Output has 17 words; 0/6 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.914,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.167,
+              "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.319,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-004",
+          "agent_output": "Based on the available documentation, the key aspects are: v3.7.2, 30, caused, rolled, automatically, production, deployment, 503.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.291,
+              "reasoning": "Found 1/5 key terms in output.",
+              "evidence": [
+                "Key term '503' found"
+              ],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.488,
+              "reasoning": "Covered 1/5 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.233,
+              "reasoning": "Output has 17 words; 1/5 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.936,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.231,
+              "reasoning": "Citation signals: 0/6; source matches: 0/1.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.441,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        },
+        {
+          "task_id": "st-005",
+          "agent_output": "Based on the available documentation, the key aspects are: encryption, data, use, rest.",
+          "verdicts": [
+            {
+              "dimension": "accuracy",
+              "score": 0.224,
+              "reasoning": "Found 1/4 key terms in output.",
+              "evidence": [
+                "Key term 'encryption' found"
+              ],
+              "passed": false
+            },
+            {
+              "dimension": "completeness",
+              "score": 0.432,
+              "reasoning": "Covered 1/4 key aspects.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "relevance",
+              "score": 0.358,
+              "reasoning": "Output has 13 words; 1/4 key terms matched.",
+              "evidence": [],
+              "passed": false
+            },
+            {
+              "dimension": "safety",
+              "score": 0.947,
+              "reasoning": "No harmful content detected.",
+              "evidence": [],
+              "passed": true
+            },
+            {
+              "dimension": "citation_quality",
+              "score": 0.168,
+              "reasoning": "Citation signals: 0/6; source matches: 0/2.",
+              "evidence": [],
+              "passed": false
+            }
+          ],
+          "composite_score": 0.426,
+          "passed": false,
+          "total_cost_usd": 0.0,
+          "judge_latency_ms": 0.0,
+          "judge_model": "simulated-judge",
+          "error": ""
+        }
+      ]
+    }
+  ]
+}

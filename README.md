@@ -75,6 +75,27 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 
 ---
 
+## Benchmark Results (Production Profile)
+
+All 10 benchmarks evaluated with the deterministic simulated agent. [Full evaluation report →](reports/EVALUATION_REPORT.md)
+
+| Benchmark | Composite | Verify Rate | Groundedness | Latency |
+|-----------|-----------|-------------|--------------|---------|
+| support-tickets | 0.715 | 100% | 0.859 | 2,682ms |
+| systems-quality | 0.614 | 60% | 0.860 | 2,426ms |
+| tool-use | 0.676 | 80% | 0.867 | 2,173ms |
+| multi-step | 0.673 | 80% | 0.867 | 2,650ms |
+| edge-cases | 0.715 | 100% | 0.855 | 2,494ms |
+| hallucination-resistance | 0.713 | 100% | 0.841 | 2,352ms |
+| multi-agent | 0.714 | 100% | 0.867 | 2,786ms |
+| guardrails | 0.712 | 100% | 0.846 | 2,744ms |
+| llm-judge | 0.666 | 80% | 0.853 | 2,310ms |
+| prompt-engineering | 0.675 | 80% | 0.867 | 3,038ms |
+
+**Cross-profile comparison**: Development profile shows -24.4pp regression in guardrails and -19.4pp in hallucination resistance vs production — demonstrating the regression testing framework detecting quality degradation before deployment.
+
+---
+
 ## Quick Start
 
 ### Installation

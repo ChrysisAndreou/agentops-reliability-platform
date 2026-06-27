@@ -1,0 +1,95 @@
+{
+  "benchmark_name": "hallucination-resistance",
+  "model": "sim-perfect",
+  "total_tasks": 5,
+  "summary": {
+    "composite_mean": 0.771,
+    "composite_std": 0.01,
+    "groundedness_mean": 1.0,
+    "citation_precision_mean": 0.0,
+    "verification_pass_rate": 1.0,
+    "avg_latency_ms": 1000.0,
+    "total_tool_calls": 0,
+    "tasks_evaluated": 5
+  },
+  "failure_patterns": [
+    {
+      "name": "retrieval_gap",
+      "description": "No relevant chunks retrieved for the query",
+      "count": 5,
+      "severity": "high",
+      "examples": [
+        "hr-001",
+        "hr-002",
+        "hr-003"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "run_id": "hr-001",
+      "task_id": "hr-001",
+      "groundedness": 1.0,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.75,
+      "latency_ms": 1000.0,
+      "latency_score": 0.992,
+      "composite": 0.787
+    },
+    {
+      "run_id": "hr-002",
+      "task_id": "hr-002",
+      "groundedness": 1.0,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.333,
+      "latency_ms": 1000.0,
+      "latency_score": 0.992,
+      "composite": 0.766
+    },
+    {
+      "run_id": "hr-003",
+      "task_id": "hr-003",
+      "groundedness": 1.0,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.25,
+      "latency_ms": 1000.0,
+      "latency_score": 0.992,
+      "composite": 0.762
+    },
+    {
+      "run_id": "hr-004",
+      "task_id": "hr-004",
+      "groundedness": 1.0,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.333,
+      "latency_ms": 1000.0,
+      "latency_score": 0.992,
+      "composite": 0.766
+    },
+    {
+      "run_id": "hr-005",
+      "task_id": "hr-005",
+      "groundedness": 1.0,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.5,
+      "latency_ms": 1000.0,
+      "latency_score": 0.992,
+      "composite": 0.774
+    }
+  ]
+}

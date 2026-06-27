@@ -1,0 +1,115 @@
+{
+  "benchmark_name": "prompt-engineering",
+  "model": "sim-production",
+  "total_tasks": 5,
+  "summary": {
+    "composite_mean": 0.675,
+    "composite_std": 0.107,
+    "groundedness_mean": 0.867,
+    "citation_precision_mean": 0.0,
+    "verification_pass_rate": 0.8,
+    "avg_latency_ms": 3038.4,
+    "total_tool_calls": 0,
+    "tasks_evaluated": 5
+  },
+  "failure_patterns": [
+    {
+      "name": "hallucination",
+      "description": "Agent produced claims not grounded in retrieved evidence",
+      "count": 5,
+      "severity": "critical",
+      "examples": [
+        "pe-001",
+        "pe-002",
+        "pe-003"
+      ]
+    },
+    {
+      "name": "retrieval_gap",
+      "description": "No relevant chunks retrieved for the query",
+      "count": 5,
+      "severity": "high",
+      "examples": [
+        "pe-001",
+        "pe-002",
+        "pe-003"
+      ]
+    },
+    {
+      "name": "verification_failure",
+      "description": "Verification step explicitly rejected the output",
+      "count": 1,
+      "severity": "high",
+      "examples": [
+        "pe-004"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "run_id": "pe-001",
+      "task_id": "pe-001",
+      "groundedness": 0.867,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.333,
+      "latency_ms": 2982.9,
+      "latency_score": 0.975,
+      "composite": 0.724
+    },
+    {
+      "run_id": "pe-002",
+      "task_id": "pe-002",
+      "groundedness": 0.867,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.833,
+      "latency_ms": 2802.9,
+      "latency_score": 0.977,
+      "composite": 0.749
+    },
+    {
+      "run_id": "pe-003",
+      "task_id": "pe-003",
+      "groundedness": 0.867,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.0,
+      "latency_ms": 3281.3,
+      "latency_score": 0.973,
+      "composite": 0.707
+    },
+    {
+      "run_id": "pe-004",
+      "task_id": "pe-004",
+      "groundedness": 0.867,
+      "citation_precision": 0.0,
+      "verification_passed": false,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.571,
+      "latency_ms": 3391.5,
+      "latency_score": 0.972,
+      "composite": 0.486
+    },
+    {
+      "run_id": "pe-005",
+      "task_id": "pe-005",
+      "groundedness": 0.867,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.0,
+      "latency_ms": 2733.6,
+      "latency_score": 0.977,
+      "composite": 0.708
+    }
+  ]
+}

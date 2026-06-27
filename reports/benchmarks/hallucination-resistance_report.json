@@ -1,0 +1,106 @@
+{
+  "benchmark_name": "hallucination-resistance",
+  "model": "sim-production",
+  "total_tasks": 5,
+  "summary": {
+    "composite_mean": 0.713,
+    "composite_std": 0.012,
+    "groundedness_mean": 0.841,
+    "citation_precision_mean": 0.0,
+    "verification_pass_rate": 1.0,
+    "avg_latency_ms": 2352.0,
+    "total_tool_calls": 0,
+    "tasks_evaluated": 5
+  },
+  "failure_patterns": [
+    {
+      "name": "hallucination",
+      "description": "Agent produced claims not grounded in retrieved evidence",
+      "count": 5,
+      "severity": "critical",
+      "examples": [
+        "hr-001",
+        "hr-002",
+        "hr-003"
+      ]
+    },
+    {
+      "name": "retrieval_gap",
+      "description": "No relevant chunks retrieved for the query",
+      "count": 5,
+      "severity": "high",
+      "examples": [
+        "hr-001",
+        "hr-002",
+        "hr-003"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "run_id": "hr-001",
+      "task_id": "hr-001",
+      "groundedness": 0.846,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.5,
+      "latency_ms": 3352.4,
+      "latency_score": 0.972,
+      "composite": 0.726
+    },
+    {
+      "run_id": "hr-002",
+      "task_id": "hr-002",
+      "groundedness": 0.818,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.0,
+      "latency_ms": 1962.9,
+      "latency_score": 0.984,
+      "composite": 0.694
+    },
+    {
+      "run_id": "hr-003",
+      "task_id": "hr-003",
+      "groundedness": 0.833,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.25,
+      "latency_ms": 2150.6,
+      "latency_score": 0.982,
+      "composite": 0.711
+    },
+    {
+      "run_id": "hr-004",
+      "task_id": "hr-004",
+      "groundedness": 0.889,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.0,
+      "latency_ms": 2586.5,
+      "latency_score": 0.978,
+      "composite": 0.715
+    },
+    {
+      "run_id": "hr-005",
+      "task_id": "hr-005",
+      "groundedness": 0.818,
+      "citation_precision": 0.0,
+      "verification_passed": true,
+      "tool_success_rate": 1.0,
+      "tool_calls_count": 0,
+      "answer_completeness": 0.5,
+      "latency_ms": 1707.5,
+      "latency_score": 0.986,
+      "composite": 0.719
+    }
+  ]
+}
