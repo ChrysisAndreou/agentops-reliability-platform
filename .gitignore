@@ -11,3 +11,4 @@ eval_results/*.db
 .venv/
 .env
 .tmp/
+alerts_production.jsonl

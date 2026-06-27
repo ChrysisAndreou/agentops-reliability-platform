@@ -1,6 +1,6 @@
 [project]
 name = "agentops-reliability-platform"
-version = "0.16.0"
+version = "0.17.0"
 description = "Production-oriented AgentOps reliability and evaluation platform for tool-using AI agents — with SDK for agent instrumentation, live observability dashboard, Slack/Discord/Email alerting, streaming verification, and 15 evaluation benchmarks"
 readme = "README.md"
 license = "MIT"
