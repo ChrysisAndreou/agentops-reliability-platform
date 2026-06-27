@@ -12,3 +12,4 @@ eval_results/*.db
 .env
 .tmp/
 alerts_production.jsonl
+.coverage
