@@ -20,16 +20,14 @@ import time
 import uuid
 from collections.abc import AsyncGenerator, Generator
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from .claim_extractor import ClaimExtractor
 from .state import (
-    StreamingClaim,
-    StreamingConfig,
-    StreamingVerificationResult,
-    StreamingRun,
-    StreamChunk,
     AbortReason,
+    StreamChunk,
+    StreamingConfig,
+    StreamingRun,
 )
 from .verifier import StreamingVerifier
 

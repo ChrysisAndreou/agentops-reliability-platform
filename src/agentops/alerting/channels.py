@@ -16,7 +16,6 @@ v0.16: Added SlackBlockChannel (Block Kit formatting), DiscordEmbedChannel
 from __future__ import annotations
 
 import json
-import os
 import smtplib
 import urllib.request
 from datetime import datetime, timezone
@@ -98,7 +97,7 @@ class FileChannel:
             with open(self._path, "a") as f:
                 f.write(json.dumps(alert.to_dict()) + "\n")
             return True
-        except (OSError, IOError):
+        except OSError:
             return False
 
     @property
@@ -374,7 +373,7 @@ class DiscordEmbedChannel:
                 })
 
         # Footer
-        footer_text = f"AgentOps Reliability Platform"
+        footer_text = "AgentOps Reliability Platform"
         if alert.run_id:
             footer_text += f" • Run: {alert.run_id}"
         embed["footer"] = {"text": footer_text}

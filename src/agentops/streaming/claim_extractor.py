@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 
 from .state import StreamingClaim, StreamingConfig
 
-
 # ── Patterns ────────────────────────────────────────────────────────────
 
 # Sentence boundary patterns (ordered by priority)

@@ -9,11 +9,11 @@ from __future__ import annotations
 
 import json
 import time
-import urllib.request
 import urllib.error
+import urllib.request
 from typing import Any
 
-from .state import SDKConfig, RunContext, TraceSpan, TraceStatus, SpanStatus
+from .state import RunContext, SDKConfig
 
 
 class AgentOpsHTTPClient:

@@ -16,20 +16,19 @@ Modules:
 - interceptor: SSE/async-generator wrapper with stream control
 """
 
+from agentops.streaming.claim_extractor import ClaimExtractor
+from agentops.streaming.interceptor import StreamingInterceptor
 from agentops.streaming.state import (
-    StreamingConfig,
+    AbortReason,
     StreamChunk,
     StreamingClaim,
-    StreamingVerificationResult,
+    StreamingConfig,
     StreamingMetrics,
     StreamingRun,
-    AbortReason,
+    StreamingVerificationResult,
     VerificationStrategy,
 )
-
-from agentops.streaming.claim_extractor import ClaimExtractor
 from agentops.streaming.verifier import StreamingVerifier
-from agentops.streaming.interceptor import StreamingInterceptor
 
 __all__ = [
     "StreamingConfig",

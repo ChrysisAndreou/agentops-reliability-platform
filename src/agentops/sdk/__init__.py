@@ -15,27 +15,27 @@ Usage:
     traces = agentops.list_traces()
 """
 
+from .client import AgentOpsHTTPClient
 from .state import (
+    AgentOpsClient,
+    RetrievalRecord,
+    RunContext,
     SDKConfig,
-    TraceSpan,
     SpanKind,
     SpanStatus,
-    RunContext,
-    AgentOpsClient,
     ToolCallRecord,
-    RetrievalRecord,
+    TraceSpan,
     TraceStatus,
 )
 from .tracer import (
     AgentOps,
-    trace,
-    start_run,
-    log_tool_call,
-    log_retrieval,
-    log_verification,
     get_current_run,
+    log_retrieval,
+    log_tool_call,
+    log_verification,
+    start_run,
+    trace,
 )
-from .client import AgentOpsHTTPClient
 
 __all__ = [
     # Main API

@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -1851,9 +1852,9 @@ def eval(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Evaluate agent memory across multi-turn conversation benchmarks."""
-    from agentops.memory.state import get_memory_profile, MEMORY_PROFILES
-    from agentops.memory.simulator import SimulatedMemoryAgent
     from agentops.memory.metrics import ALL_MEMORY_BENCHMARKS, MemoryEvaluator
+    from agentops.memory.simulator import SimulatedMemoryAgent
+    from agentops.memory.state import MEMORY_PROFILES, get_memory_profile
 
     d = Path(project_dir) if project_dir else _get_project_root()
     out = Path(output_dir) if output_dir else d / "eval_results" / "memory"
@@ -1988,7 +1989,7 @@ def alert_check(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Evaluate alert rules against current metrics (dry-run, no dispatch)."""
-    from agentops.alerting import AlertManager, get_alert_profile
+    from agentops.alerting import ALERT_PROFILES, AlertManager, get_alert_profile
 
     config = get_alert_profile(profile)
     if config is None:
@@ -2182,10 +2183,10 @@ def sdk_init(
     ok = aops.init(endpoint=endpoint, api_key=api_key, project_name=project_name)
 
     if ok:
-        print(f"SDK initialized successfully.")
+        print("SDK initialized successfully.")
         print(f"  Endpoint:  {endpoint}")
         print(f"  Project:   {project_name}")
-        print(f"  Status:    connected")
+        print("  Status:    connected")
     else:
         print(f"SDK initialized but server unreachable at {endpoint}")
         print("Agent tracing will work locally. Traces will be submitted when the server becomes available.")
@@ -2204,7 +2205,7 @@ def sdk_demo(
     aops = AgentOps()
     aops.init(endpoint=endpoint)
 
-    print(f"AgentOps SDK Demo")
+    print("AgentOps SDK Demo")
     print(f"{'=' * 50}")
     print(f"Task: {task}")
 
@@ -2372,19 +2373,19 @@ def streaming_demo(
         "Monitoring is available via Prometheus and Grafana.",
     ]
 
-    print(f"Streaming Verification Demo")
+    print("Streaming Verification Demo")
     print(f"{'=' * 60}")
     print(f"Strategy: {strategy}")
     print(f"Abort threshold: {abort_threshold}")
     print(f"Evidence chunks: {len(evidence)}")
     print(f"Simulated chunks: {len(chunks)}")
     print(f"{'=' * 60}")
-    print(f"\nProcessing stream...\n")
+    print("\nProcessing stream...\n")
 
     result = interceptor.simulate_stream(chunks, task="Explain CloudDeploy features")
 
     print(f"\n{'=' * 60}")
-    print(f"RESULTS")
+    print("RESULTS")
     print(f"{'=' * 60}")
 
     metrics = result["metrics"]
@@ -2398,7 +2399,7 @@ def streaming_demo(
         print(f"Abort reason:       {result['abort_reason']}")
         print(f"Aborted at chunk:   {result['abort_at_chunk']}")
     else:
-        print(f"Stream completed normally")
+        print("Stream completed normally")
 
     # Show what was accumulated
     output = result["accumulated_output"]
@@ -2422,10 +2423,10 @@ def streaming_eval(
     import json
     import time
     from pathlib import Path
+
     from agentops.streaming import (
         StreamingConfig,
         StreamingInterceptor,
-        StreamingVerificationResult,
         VerificationStrategy,
     )
 
@@ -2524,7 +2525,7 @@ def streaming_eval(
         },
     ]
 
-    print(f"Streaming Verification Evaluation")
+    print("Streaming Verification Evaluation")
     print(f"{'=' * 60}")
     print(f"Profile: {profile}")
     print(f"Strategy: {config.strategy.value}")
@@ -2597,7 +2598,6 @@ def streaming_check(
     from agentops.streaming import (
         StreamingConfig,
         StreamingInterceptor,
-        StreamingClaim,
         VerificationStrategy,
     )
 

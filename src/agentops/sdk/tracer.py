@@ -26,23 +26,22 @@ from __future__ import annotations
 
 import contextvars
 import functools
-import time
 import uuid
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, Callable
+from typing import Any
 
+from .client import AgentOpsHTTPClient
 from .state import (
+    RetrievalRecord,
+    RunContext,
     SDKConfig,
-    TraceSpan,
     SpanKind,
     SpanStatus,
-    RunContext,
     ToolCallRecord,
-    RetrievalRecord,
+    TraceSpan,
     TraceStatus,
 )
-from .client import AgentOpsHTTPClient
-
 
 # Context variable for the currently active run — enables log_*() helpers
 # without passing the context explicitly through every function.

@@ -7,19 +7,19 @@ with configurable degradation profiles, and systematic memory evaluation
 metrics. All testable without API keys via deterministic simulation.
 """
 
+from agentops.memory.metrics import MemoryEvaluator
+from agentops.memory.simulator import SimulatedMemoryAgent
 from agentops.memory.state import (
-    MemoryType,
-    MemoryEntry,
-    MemoryStore,
-    MemoryContext,
-    MemoryRecallResult,
-    MemoryMetrics,
-    MemoryReport,
     MEMORY_PROFILES,
+    MemoryContext,
+    MemoryEntry,
+    MemoryMetrics,
+    MemoryRecallResult,
+    MemoryReport,
+    MemoryStore,
+    MemoryType,
     get_memory_profile,
 )
-from agentops.memory.simulator import SimulatedMemoryAgent
-from agentops.memory.metrics import MemoryEvaluator
 
 __all__ = [
     "MemoryType",

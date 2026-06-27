@@ -11,15 +11,13 @@ from __future__ import annotations
 import re
 import time
 from dataclasses import dataclass, field
-from typing import Callable
 
 from .state import (
+    AbortReason,
     StreamingClaim,
     StreamingConfig,
-    StreamingVerificationResult,
     StreamingRun,
-    AbortReason,
-    VerificationStrategy,
+    StreamingVerificationResult,
 )
 
 
