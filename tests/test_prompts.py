@@ -496,7 +496,7 @@ class TestPromptEngineeringBenchmark:
         assert PROMPT_ENGINEERING_BENCH in ALL_BENCHMARKS
 
     def test_benchmark_count(self):
-        assert len(ALL_BENCHMARKS) == 10
+        assert len(ALL_BENCHMARKS) == 12
 
     def test_tasks_have_ids(self):
         bench = get_benchmark("prompt-engineering")

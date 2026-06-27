@@ -17,7 +17,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 10 benchmarks (50 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Systematic evaluation**: 12 benchmarks (60 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
 - **LLM-as-Judge evaluation**: Multi-dimensional quality assessment (accuracy, completeness, relevance, safety, citation, groundedness, clarity) using deterministic or real-LLM judges. Model comparison framework with rankings, dimension breakdowns, and cost-performance Pareto analysis.
 - **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
@@ -26,6 +26,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Failure classification**: automatic pattern detection for 8 failure modes.
 - **Cost & latency budget gates**: configurable per-run and per-step cost/latency limits with graceful degradation.
 - **Live observability dashboard**: WebSocket-powered HTML dashboard with Chart.js visualizations, live trace streaming, failure analysis, and interactive UI (32 tests, v0.10).
+- **Structured output & function calling evaluation**: JSON Schema validation for agent outputs (type checking, required fields, enum/pattern constraints, numeric ranges), function/tool call quality scoring (tool selection correctness, parameter validation, hallucinated tool detection), 2 new benchmarks (10 tasks), and comprehensive CLI for structured output quality gates (v0.11).
 - **Prompt management & optimization**: versioned prompt registry, A/B comparison against benchmarks, iterative optimization using evaluation feedback, 5 built-in templates, 10th benchmark.
 
 ---
@@ -92,8 +93,12 @@ All 10 benchmarks evaluated with the deterministic simulated agent. [Full evalua
 | guardrails | 0.712 | 100% | 0.846 | 2,744ms |
 | llm-judge | 0.666 | 80% | 0.853 | 2,310ms |
 | prompt-engineering | 0.675 | 80% | 0.867 | 3,038ms |
+| structured-output | — | — | 0.975 | — |
+| function-calling | — | — | 1.000 | — |
 
 **Cross-profile comparison**: Development profile shows -24.4pp regression in guardrails and -19.4pp in hallucination resistance vs production — demonstrating the regression testing framework detecting quality degradation before deployment.
+
+**Structured output evaluation**: Production profile achieves 0.975 schema adherence (4/5 valid JSON outputs) and 1.000 function call correctness (12/12 correct tool calls across 5 tasks), for a composite score of 0.988. [Full structured output report →](eval_results/structured_output_report.md)
 
 ---
 
@@ -295,6 +300,10 @@ agentops-reliability-platform/
 │   ├── dashboard/          # Live observability dashboard (v0.10)
 │   │   ├── server.py       # FastAPI + WebSocket + Chart.js HTML dashboard
 │   │   └── templates/      # Jinja2 HTML templates
+│   ├── structured_output/  # Structured output & function calling eval (v0.11)
+│   │   ├── state.py        # JSONSchema, SchemaValidationResult, FunctionCallResult
+│   │   ├── validator.py    # SchemaValidator + FunctionCallValidator
+│   │   └── metrics.py      # Schema adherence, function call correctness, composite
 │   ├── api/               # FastAPI server
 │   │   └── app.py         # REST endpoints
 │   └── cli/               # CLI (Typer)
@@ -302,7 +311,7 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 346 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard)\n├── docker/                # Dockerfile + docker-compose
+├── tests/                 # 402 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard, structured_output)\n├── docker/                # Dockerfile + docker-compose
 ├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
@@ -626,6 +635,58 @@ app = create_dashboard_app(trace_store=store)
 
 ---
 
+### Structured Output & Function Calling Evaluation (v0.11)
+
+Evaluates whether agents produce valid machine-readable JSON outputs and call the right tools with correct parameters — critical for production agent systems where outputs feed downstream APIs and services.
+
+```bash
+# Validate a JSON string against a schema
+agentops structured validate '{"severity":"high","service":"api","is_resolved":false}' --schema incident-report
+
+# Run the full structured output + function calling evaluation
+agentops structured eval --profile production --output eval_results/
+
+# Available schemas: incident-report, pipeline-config, support-ticket, metrics-query, audit-report
+```
+
+**Schema validation features:**
+- JSON Schema Draft-07 subset: type checking, required fields, enum values, regex patterns, numeric min/max, string length bounds, array item types
+- Detailed error categorization: missing_required, wrong_type, invalid_enum, pattern_mismatch, out_of_range, extra_field, malformed_json, not_json
+- Schema adherence scoring: fraction of fields passing validation (0.0–1.0)
+
+**Function call quality features:**
+- Tool selection correctness: did the agent call the right tool? (wrong_tool, hallucinated_tool detection)
+- Parameter validation: missing_param, wrong_param_type, invalid_param_value, extra_param
+- 15-tool schema registry covering SRE/DevOps operations (search, deploy, diagnostics, incident management, database migrations)
+- String approximate matching for parameter values (case-insensitive substring)
+
+**Benchmarks:**
+| Benchmark | Tasks | Composite | Description |
+|-----------|-------|-----------|-------------|
+| structured-output | 5 | 0.975 | Incident reports, pipeline configs, support tickets, metrics queries, audit reports |
+| function-calling | 5 | 1.000 | Tool selection, parameter correctness, multi-step tool chains, security-aware calling |
+
+```python
+from agentops.structured_output import (
+    JSONSchema, JSONSchemaField, SchemaValidator, FunctionCallValidator
+)
+
+schema = JSONSchema("incident", fields=[
+    JSONSchemaField("severity", "string", required=True, enum_values=["critical", "high", "medium", "low"]),
+    JSONSchemaField("service", "string", required=True),
+    JSONSchemaField("affected_users", "integer", required=False, minimum=0),
+])
+
+validator = SchemaValidator(schema)
+result = validator.validate('{"severity":"high","service":"api-gateway","affected_users":2500}')
+print(f"Valid: {result.is_valid}, Adherence: {result.adherence_score:.1%}")
+# → Valid: True, Adherence: 100.0%
+```
+
+**56 new tests** — schema field models, JSONSchema serialization/deserialization, SchemaValidator (valid/invalid/enum/pattern/range/malformed/null/boolean/array), FunctionCallValidator (correct/wrong tool/hallucinated/missing params/wrong type/bad value/extra params/boolean strictness/approximate match), metrics computation, report generation, CLI integration.
+
+---
+
 ## Roadmap
 
 - [x] Kubernetes Deployment — production-grade manifests with HPA, TLS, network policies, Terraform
@@ -638,6 +699,7 @@ app = create_dashboard_app(trace_store=store)
 - [x] LLM-as-Judge evaluation — multi-dimensional quality assessment, model comparison framework, Pareto analysis, 9th benchmark (v0.8)
 - [x] Prompt management & optimization — versioned registry, A/B comparison, iterative optimization, 5 templates, 10th benchmark (v0.9)
 - [x] Live observability dashboard — WebSocket streaming, Chart.js visualizations, failure analysis, dark UI, 32 tests (v0.10)
+- [x] Structured output & function calling evaluation — JSON Schema validation, tool call quality scoring, 2 benchmarks (10 tasks), 56 tests (v0.11)
 - [ ] Streaming verification (partial response checking)
 - [ ] SDK/client library for agent instrumentation (`pip install agentops`)
 - [ ] Alerting integrations (Slack, email, webhook)

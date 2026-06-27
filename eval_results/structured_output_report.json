@@ -1,0 +1,226 @@
+{
+  "benchmark_name": "structured-output + function-calling",
+  "metrics": {
+    "avg_schema_adherence": 0.975,
+    "total_valid_outputs": 4,
+    "total_invalid_outputs": 1,
+    "avg_function_call_correctness": 1.0,
+    "total_correct_calls": 12,
+    "total_incorrect_calls": 0,
+    "total_tool_selection_errors": 0,
+    "total_param_errors": 0,
+    "composite_score": 0.988
+  },
+  "schema_results": [
+    {
+      "schema_name": "incident-report",
+      "is_valid": true,
+      "adherence_score": 1.0,
+      "fields_total": 6,
+      "fields_valid": 6,
+      "fields_invalid": 0,
+      "fields_missing": 0,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "schema_name": "pipeline-config",
+      "is_valid": true,
+      "adherence_score": 1.0,
+      "fields_total": 7,
+      "fields_valid": 7,
+      "fields_invalid": 0,
+      "fields_missing": 0,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "schema_name": "support-ticket",
+      "is_valid": false,
+      "adherence_score": 0.875,
+      "fields_total": 8,
+      "fields_valid": 7,
+      "fields_invalid": 1,
+      "fields_missing": 0,
+      "errors": [
+        {
+          "field": "resolved_at",
+          "error_type": "wrong_type",
+          "message": "Field 'resolved_at' is null (expected string)",
+          "expected": "string",
+          "actual": "null"
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "schema_name": "metrics-query",
+      "is_valid": true,
+      "adherence_score": 1.0,
+      "fields_total": 4,
+      "fields_valid": 4,
+      "fields_invalid": 0,
+      "fields_missing": 0,
+      "errors": [],
+      "warnings": []
+    },
+    {
+      "schema_name": "audit-report",
+      "is_valid": true,
+      "adherence_score": 1.0,
+      "fields_total": 2,
+      "fields_valid": 2,
+      "fields_invalid": 0,
+      "fields_missing": 0,
+      "errors": [],
+      "warnings": []
+    }
+  ],
+  "function_call_results": [
+    {
+      "call_id": "fc-001-0",
+      "expected_tool": "check_resource_usage",
+      "actual_tool": "check_resource_usage",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 2,
+      "params_correct": 2,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-002-0",
+      "expected_tool": "get_service_logs",
+      "actual_tool": "get_service_logs",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 3,
+      "params_correct": 3,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-003-0",
+      "expected_tool": "get_service_logs",
+      "actual_tool": "get_service_logs",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 3,
+      "params_correct": 3,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-003-1",
+      "expected_tool": "check_resource_usage",
+      "actual_tool": "check_resource_usage",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 2,
+      "params_correct": 2,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-003-2",
+      "expected_tool": "page_oncall",
+      "actual_tool": "page_oncall",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 3,
+      "params_correct": 3,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-004-0",
+      "expected_tool": "get_db_version",
+      "actual_tool": "get_db_version",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 1,
+      "params_correct": 1,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-004-1",
+      "expected_tool": "create_db_backup",
+      "actual_tool": "create_db_backup",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 2,
+      "params_correct": 2,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-004-2",
+      "expected_tool": "run_migration",
+      "actual_tool": "run_migration",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 3,
+      "params_correct": 3,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-004-3",
+      "expected_tool": "check_migration_status",
+      "actual_tool": "check_migration_status",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 1,
+      "params_correct": 1,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-005-0",
+      "expected_tool": "flag_security_concern",
+      "actual_tool": "flag_security_concern",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 2,
+      "params_correct": 2,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-005-1",
+      "expected_tool": "get_deployment_logs",
+      "actual_tool": "get_deployment_logs",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 2,
+      "params_correct": 2,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    },
+    {
+      "call_id": "fc-005-2",
+      "expected_tool": "create_support_ticket",
+      "actual_tool": "create_support_ticket",
+      "is_correct": true,
+      "correctness_score": 1.0,
+      "params_total": 3,
+      "params_correct": 3,
+      "params_incorrect": 0,
+      "params_missing": 0,
+      "errors": []
+    }
+  ],
+  "generated_at": "2026-06-27T03:43:16.103272"
+}
