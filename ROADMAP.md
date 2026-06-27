@@ -22,4 +22,4 @@
 
 ## Remaining
 
-- [ ] v0.18 — PyPI publish (package build, twine upload, version gate)
+- [x] v0.18 — Production Readiness Assessment (8-dimension composite score, CI gate, 5 scenarios)

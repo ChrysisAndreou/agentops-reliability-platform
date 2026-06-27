@@ -2630,5 +2630,288 @@ def streaming_check(
     print(f"Aborted: {interceptor.is_aborted()}")
 
 
+# ── Readiness Commands (v0.18) ──────────────────────────────────────
+
+readiness_app = typer.Typer(
+    name="readiness",
+    help="Production readiness assessment — define what 'ready for production' means",
+    no_args_is_help=True,
+)
+
+@readiness_app.command("assess")
+def readiness_assess(
+    agent_name: str = typer.Option("agentops-agent", "--agent", "-a", help="Agent name"),
+    agent_version: str = typer.Option("0.18.0", "--version", "-v", help="Agent version"),
+    verification_pass_rate: float = typer.Option(0.95, "--verification", help="Verification pass rate (0-1)"),
+    groundedness: float = typer.Option(0.85, "--groundedness", help="Groundedness score (0-1)"),
+    guardrail_block_rate: float = typer.Option(0.95, "--guardrail-block", help="Guardrail block rate (0-1)"),
+    guardrail_false_neg: float = typer.Option(0.02, "--guardrail-fn", help="Guardrail false negative rate (0-1)"),
+    tool_success: float = typer.Option(0.90, "--tool-success", help="Tool call success rate (0-1)"),
+    tool_schema: float = typer.Option(0.92, "--tool-schema", help="Schema compliance rate (0-1)"),
+    hallucinated_tool: float = typer.Option(0.01, "--hallucinated-tool", help="Hallucinated tool rate (0-1)"),
+    judge_accuracy: float = typer.Option(80.0, "--judge-accuracy", help="LLM-as-Judge accuracy (0-100)"),
+    judge_completeness: float = typer.Option(75.0, "--judge-completeness", help="LLM-as-Judge completeness (0-100)"),
+    judge_relevance: float = typer.Option(82.0, "--judge-relevance", help="LLM-as-Judge relevance (0-100)"),
+    judge_clarity: float = typer.Option(85.0, "--judge-clarity", help="LLM-as-Judge clarity (0-100)"),
+    citation_precision: float = typer.Option(0.88, "--citation-precision", help="Citation precision (0-1)"),
+    retrieval_relevance: float = typer.Option(0.82, "--retrieval-relevance", help="Retrieval relevance (0-1)"),
+    retrieval_mrr: float = typer.Option(0.75, "--retrieval-mrr", help="Mean reciprocal rank (0-1)"),
+    avg_latency_ms: float = typer.Option(850.0, "--avg-latency", help="Average latency in ms"),
+    p95_latency_ms: float = typer.Option(1800.0, "--p95-latency", help="P95 latency in ms"),
+    budget_compliance: float = typer.Option(0.95, "--budget-compliance", help="Budget compliance rate (0-1)"),
+    memory_recall_precision: float = typer.Option(0.82, "--memory-precision", help="Memory recall precision (0-1)"),
+    memory_recall_rate: float = typer.Option(0.78, "--memory-recall", help="Memory recall rate (0-1)"),
+    memory_f1: float = typer.Option(0.80, "--memory-f1", help="Memory F1 score (0-1)"),
+    memory_hallucination: float = typer.Option(0.05, "--memory-hallucination", help="Memory hallucination rate (0-1)"),
+    multi_agent_coordination: float = typer.Option(0.0, "--multi-agent-coord", help="Multi-agent coordination score (0-1, 0=N/A)"),
+    multi_agent_efficiency: float = typer.Option(0.0, "--multi-agent-efficiency", help="Multi-agent message efficiency (0-1)"),
+    multi_agent_completion: float = typer.Option(0.0, "--multi-agent-completion", help="Multi-agent task completion rate (0-1)"),
+    trace_count: int = typer.Option(0, "--traces", "-t", help="Number of traces analyzed"),
+    benchmark_count: int = typer.Option(0, "--benchmarks", "-b", help="Number of benchmarks run"),
+    output_format: str = typer.Option("markdown", "--format", "-f", help="Output format: markdown, json, html"),
+):
+    """Assess production readiness from evaluation metrics.
+
+    Computes a composite readiness score across 8 dimensions, assigns
+    a tier (PRODUCTION_READY / CONDITIONAL / NEEDS_WORK / CRITICAL_ISSUES),
+    and generates an evidence-backed report.
+
+    All parameters have sensible defaults representing a healthy agent.
+    Adjust parameters to match your actual benchmark results.
+    """
+    from agentops.readiness.assessor import ReadinessAssessor
+    from agentops.readiness.reporting import (
+        format_readiness_json,
+        format_readiness_markdown,
+        format_readiness_html,
+    )
+
+    assessor = ReadinessAssessor(
+        agent_name=agent_name,
+        agent_version=agent_version,
+    )
+
+    report = assessor.assess(
+        eval_summary={
+            "verification_pass_rate": verification_pass_rate,
+            "groundedness_mean": groundedness,
+        },
+        guardrail_stats={
+            "block_rate": guardrail_block_rate,
+            "false_negative_rate": guardrail_false_neg,
+            "active_patterns": 21,
+        },
+        tool_stats={
+            "tool_success_rate": tool_success,
+            "schema_compliance_rate": tool_schema,
+            "hallucinated_tool_rate": hallucinated_tool,
+        },
+        judge_scores={
+            "accuracy": judge_accuracy,
+            "completeness": judge_completeness,
+            "relevance": judge_relevance,
+            "clarity": judge_clarity,
+        },
+        retrieval_stats={
+            "citation_precision": citation_precision,
+            "relevance_score": retrieval_relevance,
+            "mrr": retrieval_mrr,
+        },
+        latency_stats={
+            "avg_latency_ms": avg_latency_ms,
+            "p95_latency_ms": p95_latency_ms,
+            "budget_compliance_rate": budget_compliance,
+        },
+        memory_stats={
+            "recall_precision": memory_recall_precision,
+            "recall_rate": memory_recall_rate,
+            "f1_score": memory_f1,
+            "hallucination_rate": memory_hallucination,
+        },
+        multi_agent_stats={
+            "coordination_score": multi_agent_coordination,
+            "message_efficiency": multi_agent_efficiency,
+            "task_completion_rate": multi_agent_completion,
+        } if multi_agent_coordination > 0 else None,
+        trace_count=trace_count,
+        benchmark_count=benchmark_count,
+    )
+
+    if output_format == "json":
+        print(format_readiness_json(report))
+    elif output_format == "html":
+        print(format_readiness_html(report))
+    else:
+        print(format_readiness_markdown(report))
+
+    # CI exit code
+    if report.tier.exit_code != 0:
+        raise typer.Exit(code=report.tier.exit_code)
+
+
+@readiness_app.command("gate")
+def readiness_gate(
+    composite_threshold: float = typer.Option(75.0, "--min-composite", "-c", help="Minimum composite score"),
+    verification_pass_rate: float = typer.Option(0.95, "--verification", help="Verification pass rate"),
+    groundedness: float = typer.Option(0.85, "--groundedness", help="Groundedness score"),
+    guardrail_block_rate: float = typer.Option(0.95, "--guardrail-block", help="Guardrail block rate"),
+    guardrail_false_neg: float = typer.Option(0.02, "--guardrail-fn", help="Guardrail false negative rate"),
+    tool_success: float = typer.Option(0.90, "--tool-success", help="Tool success rate"),
+    tool_schema: float = typer.Option(0.92, "--tool-schema", help="Schema compliance rate"),
+    hallucinated_tool: float = typer.Option(0.01, "--hallucinated-tool", help="Hallucinated tool rate"),
+    judge_accuracy: float = typer.Option(80.0, "--judge-accuracy", help="Judge accuracy (0-100)"),
+    judge_completeness: float = typer.Option(75.0, "--judge-completeness", help="Judge completeness (0-100)"),
+    judge_relevance: float = typer.Option(82.0, "--judge-relevance", help="Judge relevance (0-100)"),
+    judge_clarity: float = typer.Option(85.0, "--judge-clarity", help="Judge clarity (0-100)"),
+    citation_precision: float = typer.Option(0.88, "--citation-precision", help="Citation precision (0-1)"),
+    avg_latency_ms: float = typer.Option(850.0, "--avg-latency", help="Average latency in ms"),
+    p95_latency_ms: float = typer.Option(1800.0, "--p95-latency", help="P95 latency in ms"),
+    budget_compliance: float = typer.Option(0.95, "--budget-compliance", help="Budget compliance rate"),
+    memory_f1: float = typer.Option(0.80, "--memory-f1", help="Memory F1 score (0-1)"),
+    memory_hallucination: float = typer.Option(0.05, "--memory-hallucination", help="Memory hallucination rate"),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Silent mode — only exit code"),
+):
+    """CI-friendly quality gate. Exits 0 if agent passes, 1 or 2 if it fails.
+
+    Use in CI pipelines to block deployment if agent readiness degrades:
+
+        agentops readiness gate --min-composite 75 --verification 0.90
+        if [ $? -ne 0 ]; then
+            echo "Agent failed readiness gate — aborting deployment"
+            exit 1
+        fi
+    """
+    from agentops.readiness.assessor import ReadinessAssessor
+
+    assessor = ReadinessAssessor()
+    report = assessor.assess(
+        eval_summary={
+            "verification_pass_rate": verification_pass_rate,
+            "groundedness_mean": groundedness,
+        },
+        guardrail_stats={
+            "block_rate": guardrail_block_rate,
+            "false_negative_rate": guardrail_false_neg,
+            "active_patterns": 21,
+        },
+        tool_stats={
+            "tool_success_rate": tool_success,
+            "schema_compliance_rate": tool_schema,
+            "hallucinated_tool_rate": hallucinated_tool,
+        },
+        judge_scores={
+            "accuracy": judge_accuracy,
+            "completeness": judge_completeness,
+            "relevance": judge_relevance,
+            "clarity": judge_clarity,
+        },
+        retrieval_stats={
+            "citation_precision": citation_precision,
+            "relevance_score": 0.82,
+            "mrr": 0.75,
+        },
+        latency_stats={
+            "avg_latency_ms": avg_latency_ms,
+            "p95_latency_ms": p95_latency_ms,
+            "budget_compliance_rate": budget_compliance,
+        },
+        memory_stats={
+            "recall_precision": 0.82,
+            "recall_rate": 0.78,
+            "f1_score": memory_f1,
+            "hallucination_rate": memory_hallucination,
+        },
+    )
+
+    if not quiet:
+        print(f"Readiness Gate: composite={report.composite_score:.1f} threshold={composite_threshold}")
+        print(f"Tier: {report.tier.label}")
+        print(f"Exit code: {report.tier.exit_code}")
+
+    if report.composite_score < composite_threshold or report.tier.exit_code != 0:
+        raise typer.Exit(code=max(report.tier.exit_code, 1))
+
+
+@readiness_app.command("scenarios")
+def readiness_scenarios():
+    """Run readiness assessment on 5 predefined scenarios.
+
+    Covers healthy, degraded, critical, borderline, and multi-agent
+    scenarios — useful for understanding how the scoring system works.
+    """
+    from agentops.readiness.assessor import ReadinessAssessor
+    from agentops.readiness.reporting import format_readiness_markdown
+
+    scenarios = {
+        "healthy": {
+            "eval_summary": {"verification_pass_rate": 0.95, "groundedness_mean": 0.88},
+            "guardrail_stats": {"block_rate": 0.98, "false_negative_rate": 0.02, "active_patterns": 21},
+            "tool_stats": {"tool_success_rate": 0.95, "schema_compliance_rate": 0.94, "hallucinated_tool_rate": 0.01},
+            "judge_scores": {"accuracy": 88.0, "completeness": 85.0, "relevance": 90.0, "clarity": 87.0},
+            "retrieval_stats": {"citation_precision": 0.92, "relevance_score": 0.88, "mrr": 0.85},
+            "latency_stats": {"avg_latency_ms": 450, "p95_latency_ms": 900, "budget_compliance_rate": 0.98},
+            "memory_stats": {"recall_precision": 0.90, "recall_rate": 0.88, "f1_score": 0.89, "hallucination_rate": 0.02},
+        },
+        "degraded": {
+            "eval_summary": {"verification_pass_rate": 0.72, "groundedness_mean": 0.65},
+            "guardrail_stats": {"block_rate": 0.88, "false_negative_rate": 0.08, "active_patterns": 21},
+            "tool_stats": {"tool_success_rate": 0.78, "schema_compliance_rate": 0.82, "hallucinated_tool_rate": 0.05},
+            "judge_scores": {"accuracy": 62.0, "completeness": 58.0, "relevance": 65.0, "clarity": 70.0},
+            "retrieval_stats": {"citation_precision": 0.65, "relevance_score": 0.60, "mrr": 0.55},
+            "latency_stats": {"avg_latency_ms": 3200, "p95_latency_ms": 6500, "budget_compliance_rate": 0.75},
+            "memory_stats": {"recall_precision": 0.55, "recall_rate": 0.50, "f1_score": 0.52, "hallucination_rate": 0.18},
+        },
+        "critical": {
+            "eval_summary": {"verification_pass_rate": 0.35, "groundedness_mean": 0.30},
+            "guardrail_stats": {"block_rate": 0.50, "false_negative_rate": 0.25, "active_patterns": 21},
+            "tool_stats": {"tool_success_rate": 0.45, "schema_compliance_rate": 0.50, "hallucinated_tool_rate": 0.20},
+            "judge_scores": {"accuracy": 30.0, "completeness": 25.0, "relevance": 35.0, "clarity": 40.0},
+            "retrieval_stats": {"citation_precision": 0.30, "relevance_score": 0.25, "mrr": 0.20},
+            "latency_stats": {"avg_latency_ms": 8000, "p95_latency_ms": 15000, "budget_compliance_rate": 0.40},
+            "memory_stats": {"recall_precision": 0.20, "recall_rate": 0.15, "f1_score": 0.17, "hallucination_rate": 0.40},
+        },
+        "borderline": {
+            "eval_summary": {"verification_pass_rate": 0.82, "groundedness_mean": 0.78},
+            "guardrail_stats": {"block_rate": 0.90, "false_negative_rate": 0.05, "active_patterns": 21},
+            "tool_stats": {"tool_success_rate": 0.85, "schema_compliance_rate": 0.88, "hallucinated_tool_rate": 0.03},
+            "judge_scores": {"accuracy": 72.0, "completeness": 68.0, "relevance": 75.0, "clarity": 78.0},
+            "retrieval_stats": {"citation_precision": 0.78, "relevance_score": 0.75, "mrr": 0.72},
+            "latency_stats": {"avg_latency_ms": 1800, "p95_latency_ms": 3500, "budget_compliance_rate": 0.88},
+            "memory_stats": {"recall_precision": 0.72, "recall_rate": 0.68, "f1_score": 0.70, "hallucination_rate": 0.08},
+        },
+        "multi-agent": {
+            "eval_summary": {"verification_pass_rate": 0.88, "groundedness_mean": 0.82},
+            "guardrail_stats": {"block_rate": 0.95, "false_negative_rate": 0.03, "active_patterns": 21},
+            "tool_stats": {"tool_success_rate": 0.90, "schema_compliance_rate": 0.91, "hallucinated_tool_rate": 0.02},
+            "judge_scores": {"accuracy": 82.0, "completeness": 80.0, "relevance": 85.0, "clarity": 83.0},
+            "retrieval_stats": {"citation_precision": 0.85, "relevance_score": 0.82, "mrr": 0.80},
+            "latency_stats": {"avg_latency_ms": 2500, "p95_latency_ms": 5000, "budget_compliance_rate": 0.85},
+            "memory_stats": {"recall_precision": 0.80, "recall_rate": 0.78, "f1_score": 0.79, "hallucination_rate": 0.04},
+            "multi_agent_stats": {"coordination_score": 0.88, "message_efficiency": 0.85, "task_completion_rate": 0.92},
+        },
+    }
+
+    assessor = ReadinessAssessor()
+    for name, data in scenarios.items():
+        print(f"\n{'='*70}")
+        print(f"  SCENARIO: {name.upper()}")
+        print(f"{'='*70}\n")
+        report = assessor.assess(
+            eval_summary=data["eval_summary"],
+            guardrail_stats=data["guardrail_stats"],
+            tool_stats=data["tool_stats"],
+            judge_scores=data["judge_scores"],
+            retrieval_stats=data["retrieval_stats"],
+            latency_stats=data["latency_stats"],
+            memory_stats=data["memory_stats"],
+            multi_agent_stats=data.get("multi_agent_stats"),
+            benchmark_count=10,
+            trace_count=100,
+        )
+        print(format_readiness_markdown(report))
+
+
+app.add_typer(readiness_app, name="readiness")
+
 if __name__ == "__main__":
     app()
