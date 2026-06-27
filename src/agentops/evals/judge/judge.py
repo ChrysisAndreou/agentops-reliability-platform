@@ -21,14 +21,13 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .state import (
+    DEFAULT_RUBRICS,
+    JudgeBenchmarkResult,
     JudgeConfig,
     JudgeDimension,
     JudgeResult,
     JudgeVerdict,
-    JudgeBenchmarkResult,
-    DEFAULT_RUBRICS,
 )
-
 
 # ── Utility ──────────────────────────────────────────────────────────
 
@@ -119,9 +118,9 @@ Only output valid JSON. Do not include any other text."""
         In CI/CD or without API keys, use SimulatedJudge instead.
         """
         try:
+            from langchain_anthropic import ChatAnthropic
             from langchain_core.messages import HumanMessage, SystemMessage
             from langchain_openai import ChatOpenAI
-            from langchain_anthropic import ChatAnthropic
         except ImportError:
             return JudgeResult(
                 task_id=task_id,

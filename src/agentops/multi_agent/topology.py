@@ -20,22 +20,21 @@ from __future__ import annotations
 import json
 import time
 import uuid
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from langgraph.graph import END, StateGraph
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 
 from .state import (
+    DEFAULT_WORKER_ROLES,
+    InterAgentMessage,
     MultiAgentState,
     WorkerAssignment,
     WorkerResult,
-    InterAgentMessage,
-    DEFAULT_WORKER_ROLES,
 )
-from ..agent.state import ReliabilityState, ReliabilityStep
-
 
 # ── Supervisor prompts ─────────────────────────────────────────────
 
@@ -382,7 +381,7 @@ def build_multi_agent_graph(
                 "worker_role": assignment["worker_role"],
             })
 
-        total_latency = (time.time() - t0) * 1000
+        (time.time() - t0) * 1000
 
         return {
             "worker_results": results,
@@ -447,7 +446,7 @@ def build_multi_agent_graph(
 
     def verify_node(state: MultiAgentState) -> dict:
         t0 = time.time()
-        task = state["task"]
+        state["task"]
         aggregated = state.get("aggregated_answer", "")
 
         # Collect all grounded claims from workers
@@ -593,7 +592,7 @@ def build_simulated_multi_agent_graph(
     # ── Node: Execute Workers ────────────────────────────────────
 
     def execute_workers_node(state: MultiAgentState) -> dict:
-        t0 = time.time()
+        time.time()
         assignments = state.get("assignments", [])
 
         if not assignments:

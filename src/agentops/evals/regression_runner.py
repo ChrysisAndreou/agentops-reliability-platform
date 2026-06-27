@@ -8,20 +8,17 @@ Exits with code 1 when regressions are detected (CI-friendly).
 
 from __future__ import annotations
 
-import asyncio
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .baselines import BaselineManifest, load_baseline
-from .benchmarks import ALL_BENCHMARKS, ReliabilityBenchmark
-from .comparator import EvalComparator, RegressionReport
-from .harness import EvalHarness
-from .metrics import ReliabilityMetrics, compute_metrics
-from .simulator import SimConfig, SimulatedAgent, get_profile
 from ..tracing.store import TraceStore
-
+from .baselines import load_baseline
+from .benchmarks import ALL_BENCHMARKS, ReliabilityBenchmark
+from .comparator import EvalComparator
+from .harness import EvalHarness
+from .simulator import SimulatedAgent, get_profile
 
 # Per-metric regression thresholds (a drop of this magnitude triggers a regression)
 DEFAULT_THRESHOLDS = {
@@ -65,10 +62,10 @@ class RegressionResult:
 
     def to_markdown(self) -> str:
         lines = [
-            f"# Agent Regression Test Report",
-            f"",
+            "# Agent Regression Test Report",
+            "",
             f"**Baseline:** {self.baseline_name} | **Profile:** {self.profile} | **{self.run_timestamp}**",
-            f"",
+            "",
         ]
 
         if self.has_regressions:
@@ -134,7 +131,7 @@ class RegressionResult:
 
             # Regression details
             if br.regressions:
-                lines.append(f"**Regressions:**")
+                lines.append("**Regressions:**")
                 for r in br.regressions:
                     lines.append(
                         f"- **{r['metric']}**: {r['baseline']:.4f} → {r['current']:.4f} "
@@ -143,7 +140,7 @@ class RegressionResult:
                 lines.append("")
 
             if br.improvements:
-                lines.append(f"**Improvements:**")
+                lines.append("**Improvements:**")
                 for imp in br.improvements:
                     lines.append(
                         f"- **{imp['metric']}**: {imp['baseline']:.4f} → {imp['current']:.4f} "
@@ -247,7 +244,7 @@ class RegressionRunner:
 
             # Run the benchmark
             report = await harness.run_with_simulator(bench, sim_config=self.sim_config)
-            current_tasks = [r.to_dict() for r in report.results]
+            [r.to_dict() for r in report.results]
 
             # Build current summary
             current_summary = report.summary
@@ -263,14 +260,6 @@ class RegressionRunner:
             )
 
             # Detect regressions per metric
-            metric_map = {
-                "composite_mean": "composite",
-                "groundedness_mean": "groundedness",
-                "citation_precision_mean": "citation_precision",
-                "verification_pass_rate": "verification_pass_rate",
-                "tool_success_rate_mean": "tool_success_rate",
-                "answer_completeness_mean": "answer_completeness",
-            }
 
             for summary_key, threshold in DEFAULT_THRESHOLDS.items():
                 base_val = baseline_summary.get(summary_key)

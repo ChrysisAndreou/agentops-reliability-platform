@@ -185,14 +185,14 @@ class ComparisonResult:
     def to_markdown(self) -> str:
         lines = [
             f"# Prompt Comparison: {self.config.prompt_name}",
-            f"",
+            "",
             f"**Versions**: v{self.config.version_a} vs v{self.config.version_b}",
             f"**Winner**: {self.winner.upper()} (confidence: {self.confidence:.1%})",
-            f"",
-            f"## Aggregate Scores",
-            f"",
+            "",
+            "## Aggregate Scores",
+            "",
             f"| Metric | v{self.config.version_a} | v{self.config.version_b} | Δ |",
-            f"|--------|-------------------------|-------------------------|---|",
+            "|--------|-------------------------|-------------------------|---|",
         ]
         all_metrics = set(self.version_a_scores.keys()) | set(self.version_b_scores.keys())
         for metric in sorted(all_metrics):
@@ -203,17 +203,17 @@ class ComparisonResult:
             lines.append(f"| {metric} | {a:.3f} | {b:.3f} | {sign}{delta:.3f} |")
 
         lines.extend([
-            f"",
-            f"## Recommendation",
-            f"",
+            "",
+            "## Recommendation",
+            "",
             self.recommendation,
         ])
 
         if self.per_benchmark:
-            lines.extend([f"", f"## Per-Benchmark Results", f""])
+            lines.extend(["", "## Per-Benchmark Results", ""])
             for bench_name, bench_data in self.per_benchmark.items():
                 lines.append(f"### {bench_name}")
-                lines.append(f"")
+                lines.append("")
                 if isinstance(bench_data, dict):
                     for k, v in bench_data.items():
                         lines.append(f"- **{k}**: {v}")
@@ -260,16 +260,16 @@ class OptimizationResult:
     def to_markdown(self) -> str:
         lines = [
             f"# Prompt Optimization: {self.prompt_name}",
-            f"",
+            "",
             f"**Initial version**: v{self.initial_version}",
             f"**Iterations**: {len(self.iterations)}",
             f"**Best iteration**: {self.best_iteration}",
             f"**Time**: {self.elapsed_seconds:.1f}s",
-            f"",
-            f"## Score Progression",
-            f"",
-            f"| Iteration | " + " | ".join(sorted(self.best_scores.keys())) + " |",
-            f"|-----------|" + "|".join(["-" * 10 for _ in self.best_scores]) + "|",
+            "",
+            "## Score Progression",
+            "",
+            "| Iteration | " + " | ".join(sorted(self.best_scores.keys())) + " |",
+            "|-----------|" + "|".join(["-" * 10 for _ in self.best_scores]) + "|",
         ]
         for run in self.iterations:
             scores = run.scores
@@ -280,21 +280,21 @@ class OptimizationResult:
             lines.append(f"| {run.iteration}{marker} | {score_str} |")
 
         lines.extend([
-            f"",
-            f"## Improvement",
-            f"",
+            "",
+            "## Improvement",
+            "",
         ])
         for metric, delta in sorted(self.improvement.items()):
             sign = "+" if delta > 0 else ""
             lines.append(f"- **{metric}**: {sign}{delta:.3f}")
 
         lines.extend([
-            f"",
-            f"## Optimized Prompt",
-            f"",
-            f"```",
+            "",
+            "## Optimized Prompt",
+            "",
+            "```",
             self.final_content,
-            f"```",
+            "```",
         ])
 
         return "\n".join(lines)

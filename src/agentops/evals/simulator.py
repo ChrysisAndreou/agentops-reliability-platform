@@ -18,9 +18,9 @@ from __future__ import annotations
 
 import hashlib
 import random
-import time
-from dataclasses import dataclass, field
-from typing import Any, Callable
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 from ..agent.implementations import AgentRunResult
 from ..agent.tool_registry import ToolRegistry
@@ -201,7 +201,7 @@ class SimulatedAgent:
         # Simulate citations
         n_cite = max(0, int(n_grounded * 0.8))
         citations_used = [
-            f"chunk:{i}:{hashlib.md5(c.encode()).hexdigest()[:8]}"
+            f"chunk:{i}:{hashlib.md5(c.encode()).hexdigest()[:8]}"  # nosec B324 — non-crypto chunk ID
             for i, c in enumerate(grounded_claims[:n_cite])
         ]
 
@@ -228,7 +228,7 @@ class SimulatedAgent:
         n_answer_terms = max(1, int(n_terms * completeness))
         answer_parts = key_terms[:n_answer_terms]
         final_answer = (
-            f"Based on the available documentation, the key aspects are: "
+            "Based on the available documentation, the key aspects are: "
             + ", ".join(answer_parts)
             + "."
         )
@@ -277,7 +277,7 @@ class SimulatedAgent:
             "step_type": "verify",
             "input_summary": f"Check {n_grounded} claims against sources",
             "output_summary": (
-                f"PASS: all claims grounded" if verification_pass
+                "PASS: all claims grounded" if verification_pass
                 else f"FAIL: {len(ungrounded_claims)} ungrounded claims"
             ),
             "tool_calls": [],

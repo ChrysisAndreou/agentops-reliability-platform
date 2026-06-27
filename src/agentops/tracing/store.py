@@ -9,9 +9,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-import time
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -195,7 +193,7 @@ class TraceStore:
             params.append(task_id)
 
         where = "WHERE " + " AND ".join(conditions) if conditions else ""
-        query = f"SELECT * FROM traces {where} ORDER BY created_at DESC LIMIT ?"
+        query = f"SELECT * FROM traces {where} ORDER BY created_at DESC LIMIT ?"  # nosec B608 — parameterized, conditions are column names
         params.append(limit)
 
         rows = conn.execute(query, params).fetchall()

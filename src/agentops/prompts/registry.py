@@ -13,14 +13,14 @@ from __future__ import annotations
 import difflib
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from agentops.prompts.state import (
-    PromptTemplate,
-    PromptVersion,
+    DEFAULT_PROMPTS,
     PromptCategory,
     PromptDiff,
-    DEFAULT_PROMPTS,
+    PromptTemplate,
+    PromptVersion,
 )
 
 
@@ -40,7 +40,7 @@ class PromptRegistry:
         rendered = reg.render("summarizer", docs="doc content")
     """
 
-    def __init__(self, storage_path: Optional[str] = None):
+    def __init__(self, storage_path: str | None = None):
         self._templates: dict[str, PromptTemplate] = {}
         self._versions: dict[str, list[PromptVersion]] = {}
         self._storage_path = Path(storage_path) if storage_path else None
@@ -57,10 +57,10 @@ class PromptRegistry:
         name: str,
         description: str = "",
         category: str | PromptCategory = PromptCategory.CUSTOM,
-        variables: Optional[list[str]] = None,
+        variables: list[str] | None = None,
         author: str = "agentops",
         changelog: str = "Initial version",
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PromptVersion:
         """Register a new prompt and create version 1.
 
@@ -136,7 +136,7 @@ class PromptRegistry:
         new_content: str,
         author: str = "agentops",
         changelog: str = "",
-        metadata: Optional[dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> PromptVersion:
         """Create a new version of an existing prompt.
 
@@ -178,7 +178,7 @@ class PromptRegistry:
 
     # ── Retrieval ──────────────────────────────────────────────────
 
-    def get(self, name: str, version: Optional[int] = None) -> PromptVersion:
+    def get(self, name: str, version: int | None = None) -> PromptVersion:
         """Get a specific version of a prompt. Defaults to latest.
 
         Raises KeyError if prompt or version doesn't exist.
@@ -226,12 +226,12 @@ class PromptRegistry:
 
     # ── Diff ───────────────────────────────────────────────────────
 
-    def diff(self, name: str, version_a: int, version_b: Optional[int] = None) -> PromptDiff:
+    def diff(self, name: str, version_a: int, version_b: int | None = None) -> PromptDiff:
         """Compute the diff between two prompt versions.
 
         If version_b is None, compares version_a against the previous version.
         """
-        versions = self._versions[name]
+        self._versions[name]
         if version_b is None:
             version_b = version_a
             version_a = version_b - 1
@@ -295,7 +295,7 @@ class PromptRegistry:
 
     # ── Render ─────────────────────────────────────────────────────
 
-    def render(self, name: str, version: Optional[int] = None, **kwargs) -> str:
+    def render(self, name: str, version: int | None = None, **kwargs) -> str:
         """Render a prompt with variable values.
 
         Gets the specified version (or latest) and fills in variables.
@@ -317,7 +317,7 @@ class PromptRegistry:
 
     # ── Persistence ────────────────────────────────────────────────
 
-    def save(self, path: Optional[str] = None) -> str:
+    def save(self, path: str | None = None) -> str:
         """Persist the registry to a JSON file."""
         target = Path(path) if path else self._storage_path
         if target is None:
@@ -345,7 +345,7 @@ class PromptRegistry:
         return str(target)
 
     @classmethod
-    def load(cls, path: str) -> "PromptRegistry":
+    def load(cls, path: str) -> PromptRegistry:
         """Load a registry from a JSON file."""
         data = json.loads(Path(path).read_text())
         registry = cls(storage_path=path)

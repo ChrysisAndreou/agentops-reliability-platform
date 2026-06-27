@@ -11,7 +11,6 @@ import hashlib
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterator
 
 
 @dataclass
@@ -165,7 +164,7 @@ class DocumentIngestor:
 
     def _make_chunk_id(self, source: str, index: int, text: str) -> str:
         """Create a stable chunk ID."""
-        h = hashlib.md5(f"{source}:{index}:{text[:100]}".encode()).hexdigest()[:12]
+        h = hashlib.md5(f"{source}:{index}:{text[:100]}".encode()).hexdigest()[:12]  # nosec B324 — non-crypto chunk ID
         return f"{source}:{index}:{h}"
 
     def _estimate_tokens(self, text: str) -> int:

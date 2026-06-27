@@ -7,8 +7,7 @@ tool correctness, and run-level quality indicators.
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
@@ -60,29 +59,29 @@ class ReliabilityMetrics:
 
     run_id: str
     task_id: str
-    
+
     # Core reliability
     groundedness: float = 0.0
     citation_precision: float = 0.0
     verification_passed: bool = False
     verification_pass_rate: float = 0.0
-    
+
     # Tool quality
     tool_success_rate: float = 1.0
     tool_calls_count: int = 0
-    
+
     # Answer quality
     answer_completeness: float = 0.0
     key_terms_found: int = 0
     key_terms_total: int = 0
-    
+
     # Performance
     latency_ms: float = 0.0
     latency_score: float = 0.0
-    
+
     # Composite
     composite: float = 0.0
-    
+
     # Metadata
     grounded_claims_count: int = 0
     ungrounded_claims_count: int = 0

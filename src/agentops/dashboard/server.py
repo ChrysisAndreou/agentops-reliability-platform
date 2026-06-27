@@ -10,14 +10,12 @@ Usage:
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 
 try:
     from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -94,7 +92,7 @@ class DashboardServer:
         # Count recent runs (last hour)
         recent = 0
         conn = self.trace_store._get_conn()
-        one_hour_ago = time.time() - 3600
+        time.time() - 3600
         try:
             row = conn.execute(
                 "SELECT COUNT(*) FROM traces WHERE total_latency_ms > 0"
@@ -205,7 +203,7 @@ class DashboardServer:
             await websocket.send_json({"type": "stats", "data": stats})
 
             # Keep connection alive and push updates
-            last_check = time.time()
+            time.time()
             while True:
                 await asyncio.sleep(5)
 

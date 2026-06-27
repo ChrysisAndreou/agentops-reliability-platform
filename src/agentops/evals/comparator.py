@@ -13,10 +13,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
-
-from .metrics import ReliabilityMetrics, compute_metrics
 from .benchmarks import ReliabilityBenchmark
+from .metrics import ReliabilityMetrics, compute_metrics
 from .simulator import SimConfig, SimulatedAgent
 
 

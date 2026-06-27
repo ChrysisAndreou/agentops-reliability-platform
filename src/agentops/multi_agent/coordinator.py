@@ -13,19 +13,17 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 from .state import (
-    MultiAgentState,
-    WorkerAssignment,
-    WorkerResult,
-    InterAgentMessage,
-    WorkerRole,
     DEFAULT_WORKER_ROLES,
+    InterAgentMessage,
+    WorkerResult,
+    WorkerRole,
     create_multi_agent_state,
 )
-from .topology import build_multi_agent_graph
 
 
 @dataclass
@@ -136,15 +134,12 @@ class MultiAgentCoordinator:
         # Execute the graph
         config_dict = {"configurable": {"thread_id": run_id}}
 
-        async for event in graph.astream(initial_state, config_dict):
+        async for _event in graph.astream(initial_state, config_dict):
             pass  # Stream to completion; state is accumulated in checkpointer
 
         # Get full accumulated state from checkpointer
         snapshot = graph.get_state(config_dict)
-        if snapshot and snapshot.values:
-            final_state = snapshot.values
-        else:
-            final_state = initial_state
+        final_state = snapshot.values if snapshot and snapshot.values else initial_state
 
         total_latency = (time.time() - t0) * 1000
 
@@ -192,14 +187,15 @@ class MultiAgentCoordinator:
         Returns:
             A callable suitable for use as worker_fn in MultiAgentCoordinator.
         """
-        from ..evals.simulator import get_profile, SimulatedAgent
+        from ..evals.simulator import SimulatedAgent, get_profile
 
         sim_config = get_profile(profile_name)
         if sim_config is None:
             raise ValueError(f"Unknown profile: {profile_name}")
 
         def _worker(role: str, subtask: str, context: str) -> WorkerResult:
-            import uuid, asyncio
+            import asyncio
+            import uuid
             agent = SimulatedAgent(config=sim_config, seed=hash(f"{role}:{subtask}") & 0xFFFFFFFF)
 
             full_task = subtask

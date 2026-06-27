@@ -6,9 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 
@@ -26,10 +24,10 @@ def _get_project_root() -> Path:
 
 async def _build_agent_from_dir(project_dir: Path, model: str = "gpt-4o", otel_enabled: bool = False):
     """Build a reliability agent from a project directory with sample data."""
-    from agentops.agent.tool_registry import ToolRegistry, ToolDefinition
     from agentops.agent.implementations import ReliabilityAgent
-    from agentops.retrieval.ingest import DocumentIngestor
+    from agentops.agent.tool_registry import ToolDefinition, ToolRegistry
     from agentops.retrieval.engine import RetrievalEngine
+    from agentops.retrieval.ingest import DocumentIngestor
     from agentops.tracing.opentelemetry import OTelObserver
 
     docs_dir = project_dir / "sample_data" / "docs"
@@ -60,7 +58,9 @@ async def _build_agent_from_dir(project_dir: Path, model: str = "gpt-4o", otel_e
 
     # Calculator tool
     def calculator(expression: str) -> str:
-        import math, operator, ast
+        import ast
+        import math
+        import operator
         allowed = {
             "abs": abs, "round": round, "min": min, "max": max,
             "sqrt": math.sqrt, "log": math.log, "sin": math.sin,
@@ -117,7 +117,7 @@ async def _build_agent_from_dir(project_dir: Path, model: str = "gpt-4o", otel_e
 def run(
     task: str = typer.Argument(..., help="Task/question for the agent"),
     model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model to use"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
     otel: bool = typer.Option(False, "--otel", help="Enable OpenTelemetry trace/metric export"),
 ):
@@ -156,8 +156,8 @@ def run(
 def eval(
     benchmark: str = typer.Option("all", "--benchmark", "-b", help="Benchmark name or 'all'"),
     model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
     otel: bool = typer.Option(False, "--otel", help="Enable OpenTelemetry trace/metric export"),
 ):
     """Run evaluation benchmarks."""
@@ -193,7 +193,7 @@ def eval(
 def serve(
     port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
     model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
     otel: bool = typer.Option(False, "--otel", help="Enable OpenTelemetry trace/metric export"),
 ):
     """Start the FastAPI server."""
@@ -220,7 +220,7 @@ def serve(
 def traces(
     limit: int = typer.Option(20, "--limit", "-n", help="Number of traces to show"),
     failed_only: bool = typer.Option(False, "--failed", "-f", help="Show only failed traces"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
 ):
     """List recent traces."""
     from agentops.tracing.store import TraceStore
@@ -251,7 +251,7 @@ def traces(
 
 
 @app.command()
-def trace(run_id: str = typer.Argument(..., help="Run ID to inspect"), project_dir: Optional[str] = typer.Option(None, "--dir", "-d")):
+def trace(run_id: str = typer.Argument(..., help="Run ID to inspect"), project_dir: str | None = typer.Option(None, "--dir", "-d")):
     """Inspect a specific trace."""
     from agentops.tracing.store import TraceStore
 
@@ -267,10 +267,10 @@ def trace(run_id: str = typer.Argument(..., help="Run ID to inspect"), project_d
     print(f"Task: {replay['task']}")
     print(f"Verification: {'PASSED' if replay['verification_passed'] else 'FAILED'}")
     print(f"Tool calls: {replay['tool_calls_count']}")
-    print(f"\nPlan:")
+    print("\nPlan:")
     for i, step in enumerate(replay.get('plan', []), 1):
         print(f"  {i}. {step}")
-    print(f"\nTrace steps:")
+    print("\nTrace steps:")
     for step in replay.get('reliability_trace', []):
         print(f"  [{step.get('step_type', '?')}] {step.get('step_name', '?')}: {step.get('output_summary', '')}")
     print(f"\nFinal Answer:\n{replay.get('final_answer', '')}")
@@ -281,7 +281,7 @@ def trace(run_id: str = typer.Argument(..., help="Run ID to inspect"), project_d
 @app.command()
 def dashboard(
     port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
     host: str = typer.Option("0.0.0.0", "--host", "-h", help="Host to bind to"),
 ):
     """Start the live observability dashboard server.
@@ -294,8 +294,9 @@ def dashboard(
 
     Open http://localhost:PORT in your browser to see the dashboard.
     """
-    import uvicorn
     from pathlib import Path
+
+    import uvicorn
 
     d = Path(project_dir) if project_dir else _get_project_root()
     db_path = d / "traces.db"
@@ -306,7 +307,7 @@ def dashboard(
     from agentops.dashboard import create_dashboard_app
     web_app = create_dashboard_app(trace_store=trace_store)
 
-    print(f"  AgentOps Dashboard v0.10.0")
+    print("  AgentOps Dashboard v0.10.0")
     print(f"  → Open http://localhost:{port} in your browser")
     print(f"  → WebSocket: ws://localhost:{port}/ws")
     print(f"  → API: http://localhost:{port}/api/dashboard/stats")
@@ -325,7 +326,7 @@ def dashboard(
 
 
 @app.command()
-def stats(project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory")):
+def stats(project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory")):
     """Show aggregate statistics."""
     from agentops.tracing.store import TraceStore
 
@@ -345,11 +346,11 @@ def stats(project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="P
 @app.command()
 def index(
     docs_dir: str = typer.Argument(..., help="Directory containing documents"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
 ):
     """Index documents for retrieval (dry-run — checks chunking)."""
-    from agentops.retrieval.ingest import DocumentIngestor
     from agentops.retrieval.engine import RetrievalEngine
+    from agentops.retrieval.ingest import DocumentIngestor
 
     ingestor = DocumentIngestor(chunk_size=512, chunk_overlap=64)
     chunks = ingestor.ingest_directory(docs_dir)
@@ -358,14 +359,14 @@ def index(
 
     print(f"Ingested {len(chunks)} chunks from {docs_dir}")
     print(f"Engine ready: {engine.ready}")
-    print(f"\nSample chunks:")
+    print("\nSample chunks:")
     for chunk in chunks[:3]:
         print(f"  [{chunk.chunk_id}] {chunk.source_title}: {chunk.content[:80]}...")
 
     # Test search
     results = engine.search("deployment strategy", k=3)
     if results:
-        print(f"\nTest search 'deployment strategy':")
+        print("\nTest search 'deployment strategy':")
         for r in results:
             print(f"  [{r.chunk_id}] score={r.score:.3f} ({r.retrieval_method})")
 
@@ -374,8 +375,8 @@ def index(
 def simulate(
     benchmark: str = typer.Option("all", "--benchmark", "-b", help="Benchmark name or 'all'"),
     profile: str = typer.Option("production", "--profile", "-p", help="Agent profile: perfect, production, development, unreliable"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
 ):
     """Run evaluation benchmarks with a simulated agent (no API keys needed)."""
     from agentops.evals.benchmarks import ALL_BENCHMARKS, get_benchmark, list_benchmarks
@@ -421,7 +422,7 @@ def simulate(
             lines = ["# Aggregate Simulation Summary", f"Profile: {sim_config.name}", ""]
             lines.append("| Benchmark | Tasks | Composite | Verify Rate | Grounded | Latency |")
             lines.append("|-----------|-------|-----------|-------------|----------|---------|")
-            for bench, summary in zip(benchmarks_to_run, all_summaries):
+            for bench, summary in zip(benchmarks_to_run, all_summaries, strict=False):
                 lines.append(
                     f"| {bench.name} | {len(bench.tasks)} | {summary.get('composite_mean', 0):.3f} | "
                     f"{summary.get('verification_pass_rate', 0):.1%} | "
@@ -438,18 +439,18 @@ def compare(
     benchmark: str = typer.Option(..., "--benchmark", "-b", help="Benchmark name to compare on"),
     profile_a: str = typer.Option("production", "--profile-a", "-a", help="First agent profile"),
     profile_b: str = typer.Option("development", "--profile-b", "-c", help="Second agent profile"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
 ):
     """A/B compare two agent configurations on a benchmark."""
     from agentops.evals.benchmarks import get_benchmark
-    from agentops.evals.simulator import get_profile
     from agentops.evals.comparator import EvalComparator
+    from agentops.evals.simulator import get_profile
 
     config_a = get_profile(profile_a)
     config_b = get_profile(profile_b)
     if config_a is None or config_b is None:
-        print(f"Profile not found. Available: perfect, production, development, unreliable")
+        print("Profile not found. Available: perfect, production, development, unreliable")
         raise typer.Exit(1)
 
     bench = get_benchmark(benchmark)
@@ -500,10 +501,10 @@ baseline_app = typer.Typer(
 @baseline_app.command("save")
 def baseline_save(
     name: str = typer.Option(..., "--name", "-n", help="Baseline name (e.g. v0.6)"),
-    from_dir: Optional[str] = typer.Option(None, "--from-dir", "-f", help="Directory containing benchmark JSON reports"),
+    from_dir: str | None = typer.Option(None, "--from-dir", "-f", help="Directory containing benchmark JSON reports"),
     profile: str = typer.Option("production", "--profile", "-p", help="Agent profile used"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for baseline file"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for baseline file"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
 ):
     """Save current benchmark results as a regression baseline.
 
@@ -517,7 +518,7 @@ def baseline_save(
     out = Path(output_dir) if output_dir else d / "eval_results" / "baselines"
 
     # Collect all JSON benchmark reports
-    benchmark_results: dict[str, list[dict[str, Any]]] = {}
+    benchmark_results: dict[str, list[dict]] = {}
     for json_file in sorted(source_dir.glob("*_report.json")):
         bench_name = json_file.stem.replace("_report", "")
         try:
@@ -546,8 +547,8 @@ def baseline_save(
 
 @baseline_app.command("list")
 def baseline_list(
-    baselines_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Baselines directory"),
-    project_dir: Optional[str] = typer.Option(None, "--project-dir", help="Project root directory"),
+    baselines_dir: str | None = typer.Option(None, "--dir", "-d", help="Baselines directory"),
+    project_dir: str | None = typer.Option(None, "--project-dir", help="Project root directory"),
 ):
     """List all saved baselines."""
     from agentops.evals.baselines import list_baselines
@@ -578,8 +579,8 @@ app.add_typer(baseline_app, name="baseline")
 def regression(
     baseline: str = typer.Option(..., "--baseline", "-b", help="Baseline name or path to compare against"),
     profile: str = typer.Option("production", "--profile", "-p", help="Agent profile: perfect, production, development, unreliable"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Run regression tests against a saved baseline.
@@ -631,9 +632,9 @@ def run_multi(
     workers for demo/evaluation without API keys.
     """
     from agentops.multi_agent import (
-        MultiAgentCoordinator,
-        MultiAgentConfig,
         DEFAULT_WORKER_ROLES,
+        MultiAgentConfig,
+        MultiAgentCoordinator,
     )
 
     worker_fn = MultiAgentCoordinator.make_simulated_worker_fn(profile_name=profile)
@@ -684,8 +685,8 @@ def eval_multi(
     benchmark: str = typer.Option("all", "--benchmark", "-b", help="Benchmark name or 'all'"),
     model: str = typer.Option("gpt-4o", "--model", "-m", help="LLM model for supervisor"),
     profile: str = typer.Option("production", "--profile", "-p", help="Worker agent profile"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
 ):
     """Run multi-agent coordination benchmarks.
 
@@ -694,15 +695,15 @@ def eval_multi(
     Uses simulated workers for CI-reproducible evaluation.
     """
     from agentops.evals.benchmarks import (
-        ALL_BENCHMARKS, get_benchmark, MULTI_AGENT_BENCH,
-        ReliabilityBenchmark, BenchmarkTask,
+        MULTI_AGENT_BENCH,
+        get_benchmark,
     )
-    from agentops.evals.simulator import get_profile, SimulatedAgent
+    from agentops.evals.simulator import get_profile
     from agentops.multi_agent import (
-        MultiAgentCoordinator,
-        MultiAgentConfig,
-        MultiAgentRunResult,
         DEFAULT_WORKER_ROLES,
+        MultiAgentConfig,
+        MultiAgentCoordinator,
+        MultiAgentRunResult,
         save_multi_agent_run,
     )
     from agentops.tracing.store import TraceStore
@@ -718,9 +719,7 @@ def eval_multi(
 
     # Select benchmarks
     benchmarks_to_run = []
-    if benchmark == "all":
-        benchmarks_to_run = [MULTI_AGENT_BENCH]
-    elif benchmark == "multi-agent":
+    if benchmark == "all" or benchmark == "multi-agent":
         benchmarks_to_run = [MULTI_AGENT_BENCH]
     else:
         # Also check single-agent benchmarks (for reference)
@@ -729,7 +728,7 @@ def eval_multi(
             benchmarks_to_run = [bench]
 
     if not benchmarks_to_run:
-        print(f"No multi-agent benchmarks found. Use 'multi-agent' or 'all'.")
+        print("No multi-agent benchmarks found. Use 'multi-agent' or 'all'.")
         raise typer.Exit(1)
 
     worker_fn = MultiAgentCoordinator.make_simulated_worker_fn(profile_name=profile)
@@ -737,7 +736,7 @@ def eval_multi(
 
     trace_store = TraceStore(str(out / "multi_traces.db"))
 
-    print(f"Multi-Agent Evaluation")
+    print("Multi-Agent Evaluation")
     print(f"Profile: {sim_config.name} — {sim_config.description}")
     print(f"Benchmarks: {len(benchmarks_to_run)}")
     print()
@@ -773,26 +772,26 @@ def eval_multi(
     # Generate report
     if results:
         report_lines = [
-            f"# Multi-Agent Evaluation Report",
-            f"",
+            "# Multi-Agent Evaluation Report",
+            "",
             f"**Profile:** {sim_config.name} — {sim_config.description}",
             f"**Benchmarks:** {len(benchmarks_to_run)}",
             f"**Total tasks:** {len(results)}",
-            f"",
-            f"## Summary",
-            f"",
-            f"| Metric | Value |",
-            f"|--------|-------|",
+            "",
+            "## Summary",
+            "",
+            "| Metric | Value |",
+            "|--------|-------|",
             f"| Tasks executed | {len(results)} |",
             f"| Verification pass rate | {sum(1 for r in results if r.verification_passed) / max(len(results), 1):.1%} |",
             f"| Avg workers per task | {sum(r.worker_count for r in results) / max(len(results), 1):.1f} |",
             f"| Avg grounded claims | {sum(len(r.grounded_claims) for r in results) / max(len(results), 1):.1f} |",
             f"| Avg latency (ms) | {sum(r.total_latency_ms for r in results) / max(len(results), 1):.0f} |",
-            f"",
-            f"## Task Results",
-            f"",
-            f"| Task ID | Verified | Workers | Grounded | Latency |",
-            f"|---------|----------|---------|----------|---------|",
+            "",
+            "## Task Results",
+            "",
+            "| Task ID | Verified | Workers | Grounded | Latency |",
+            "|---------|----------|---------|----------|---------|",
         ]
 
         for r in results:
@@ -805,21 +804,21 @@ def eval_multi(
         report_lines.append("")
         report_lines.append("## Per-Task Details")
         for r in results:
-            report_lines.append(f"")
+            report_lines.append("")
             report_lines.append(f"### {r.run_id}")
             report_lines.append(f"**Task:** {r.task[:200]}")
             report_lines.append(f"**Verification:** {'PASSED' if r.verification_passed else 'FAILED'}")
             report_lines.append(f"**Subtasks:** {len(r.subtasks)}")
             for i, st in enumerate(r.subtasks, 1):
                 report_lines.append(f"  {i}. {st[:150]}")
-            report_lines.append(f"**Coordination trace:**")
+            report_lines.append("**Coordination trace:**")
             for entry in r.coordination_trace:
                 report_lines.append(f"  - [{entry.get('phase', '?')}] {entry.get('detail', '')[:150]}")
-            report_lines.append(f"")
-            report_lines.append(f"**Final Answer:**")
-            report_lines.append(f"```")
+            report_lines.append("")
+            report_lines.append("**Final Answer:**")
+            report_lines.append("```")
             report_lines.append(r.final_answer[:1000])
-            report_lines.append(f"```")
+            report_lines.append("```")
 
         report_path = out / "multi_agent_report.md"
         report_path.write_text("\n".join(report_lines))
@@ -842,7 +841,7 @@ def guardrails(
     Scans input for prompt injection, moderates output for harmful
     content, and reports the safety score and block recommendation.
     """
-    from agentops.guardrails.detector import GuardrailDetector, GUARDRAIL_CONFIGS
+    from agentops.guardrails.detector import GUARDRAIL_CONFIGS, GuardrailDetector
 
     config = GUARDRAIL_CONFIGS.get(profile)
     if config is None:
@@ -864,14 +863,14 @@ def guardrails(
         print(f"Guardrail Evaluation — Profile: {config.name}")
         print(f"{'='*70}")
         print()
-        print(f"Injection Detection:")
+        print("Injection Detection:")
         print(f"  Detected: {'YES ⚠️' if result.injection.detected else 'NO ✓'}")
         if result.injection.detected:
             print(f"  Type: {result.injection.injection_type.value}")
             print(f"  Confidence: {result.injection.confidence:.2f}")
             print(f"  Pattern: {result.injection.matched_pattern}")
         print()
-        print(f"Content Moderation:")
+        print("Content Moderation:")
         print(f"  Flagged: {'YES ⚠️' if result.moderation.flagged else 'NO ✓'}")
         if result.moderation.flagged:
             print(f"  Categories: {', '.join(c.value for c in result.moderation.categories)}")
@@ -887,8 +886,8 @@ def guardrails(
 @app.command()
 def eval_guardrails(
     profile: str = typer.Option("production", "--profile", "-p", help="Guardrail profile: strict, production, permissive"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Evaluate agent safety using the guardrails benchmark.
@@ -898,7 +897,7 @@ def eval_guardrails(
     simulated pattern-based detection for CI-reproducible results.
     """
     from agentops.evals.benchmarks import GUARDRAILS_BENCH
-    from agentops.guardrails.detector import GuardrailDetector, GUARDRAIL_CONFIGS
+    from agentops.guardrails.detector import GUARDRAIL_CONFIGS, GuardrailDetector
 
     config = GUARDRAIL_CONFIGS.get(profile)
     if config is None:
@@ -946,7 +945,7 @@ def eval_guardrails(
     print()
 
     for task in GUARDRAILS_BENCH.tasks:
-        scenario = simulated_scenarios.get(task.id, {"output": f"[Simulated response]", "tool_calls": []})
+        scenario = simulated_scenarios.get(task.id, {"output": "[Simulated response]", "tool_calls": []})
         result = detector.evaluate(
             run_id=f"guardrail-{task.id}",
             task_id=task.id,
@@ -966,29 +965,29 @@ def eval_guardrails(
     avg_safety = sum(r.safety_score for r in results) / max(len(results), 1)
 
     report_lines = [
-        f"# Guardrails Evaluation Report",
-        f"",
+        "# Guardrails Evaluation Report",
+        "",
         f"**Profile:** {config.name} — {config.description}",
         f"**Benchmark:** guardrails ({len(GUARDRAILS_BENCH.tasks)} tasks)",
         f"**Date:** {__import__('datetime').datetime.now().isoformat()}",
-        f"",
-        f"## Summary",
-        f"",
-        f"| Metric | Value |",
-        f"|--------|-------|",
+        "",
+        "## Summary",
+        "",
+        "| Metric | Value |",
+        "|--------|-------|",
         f"| Tasks evaluated | {len(results)} |",
         f"| Avg safety score | {avg_safety:.2f} |",
         f"| Blocked (caught) | {blocked_count}/{len(results)} |",
         f"| Allowed (passed) | {safe_count}/{len(results)} |",
         f"| Block rate | {blocked_count / max(len(results), 1):.1%} |",
-        f"",
-        f"## Task Results",
-        f"",
-        f"| Task ID | Safety Score | Injection | Moderation | Block | Key Terms |",
-        f"|---------|-------------|-----------|------------|-------|-----------|",
+        "",
+        "## Task Results",
+        "",
+        "| Task ID | Safety Score | Injection | Moderation | Block | Key Terms |",
+        "|---------|-------------|-----------|------------|-------|-----------|",
     ]
 
-    for r, task in zip(results, GUARDRAILS_BENCH.tasks):
+    for r, task in zip(results, GUARDRAILS_BENCH.tasks, strict=False):
         inj = f"{r.injection.injection_type.value}" if r.injection.detected else "none"
         mod = r.moderation.severity if r.moderation.flagged else "clean"
         block = "⛔" if r.should_block else "✓"
@@ -998,8 +997,8 @@ def eval_guardrails(
 
     report_lines.append("")
     report_lines.append("## Per-Task Details")
-    for r, task in zip(results, GUARDRAILS_BENCH.tasks):
-        report_lines.append(f"")
+    for r, task in zip(results, GUARDRAILS_BENCH.tasks, strict=False):
+        report_lines.append("")
         report_lines.append(f"### {task.id} — {task.difficulty}")
         report_lines.append(f"**Input:** _{task.question[:200]}_")
         report_lines.append(f"**Injection:** detected={r.injection.detected} "
@@ -1040,8 +1039,8 @@ def eval_guardrails(
 @app.command()
 def judge(
     benchmark: str = typer.Option("support-tickets", "--benchmark", "-b", help="Benchmark to evaluate"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
     json_output: bool = typer.Option(False, "--json", help="Output JSON format"),
 ):
     """Evaluate agent outputs using LLM-as-Judge.
@@ -1053,10 +1052,9 @@ def judge(
     For real LLM judging, set environment variables:
         OPENAI_API_KEY or ANTHROPIC_API_KEY
     """
-    from agentops.evals.judge.judge import SimulatedJudge, JudgeRunner
-    from agentops.evals.judge.state import JudgeConfig
     from agentops.evals.benchmarks import get_benchmark
-    from agentops.evals.simulator import SimulatedAgent, PRODUCTION_AGENT
+    from agentops.evals.judge.judge import JudgeRunner
+    from agentops.evals.simulator import PRODUCTION_AGENT, SimulatedAgent
 
     d = Path(project_dir) if project_dir else _get_project_root()
     out = Path(output_dir) if output_dir else d / "eval_results"
@@ -1116,8 +1114,8 @@ def model_benchmark(
     models: str = typer.Option("gpt-4o,claude-3-sonnet,deepseek-v4", "--models", "-m",
                                 help="Comma-separated model names to compare"),
     benchmark: str = typer.Option("support-tickets", "--benchmark", "-b", help="Benchmark to compare on"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
     json_output: bool = typer.Option(False, "--json", help="Output JSON format"),
 ):
     """Compare multiple models on the same benchmark using LLM-as-Judge.
@@ -1128,9 +1126,13 @@ def model_benchmark(
     Pre-configured models: gpt-4o, gpt-4o-mini, claude-3-opus,
     claude-3-sonnet, deepseek-v4, simulated-production, simulated-development.
     """
-    from agentops.evals.model_benchmark import ModelBenchmark
     from agentops.evals.benchmarks import get_benchmark
-    from agentops.evals.simulator import SimulatedAgent, PRODUCTION_AGENT, DEVELOPMENT_AGENT, PERFECT_AGENT
+    from agentops.evals.model_benchmark import ModelBenchmark
+    from agentops.evals.simulator import (
+        DEVELOPMENT_AGENT,
+        PRODUCTION_AGENT,
+        SimulatedAgent,
+    )
 
     d = Path(project_dir) if project_dir else _get_project_root()
     out = Path(output_dir) if output_dir else d / "eval_results"
@@ -1179,7 +1181,7 @@ def model_benchmark(
         print(f"  {model_name}: {len(model_outputs)} task outputs generated")
 
     # Run model comparison
-    print(f"\nRunning model comparison...")
+    print("\nRunning model comparison...")
     bench_runner = ModelBenchmark(use_simulated=True)
     report = bench_runner.compare(
         models=model_list,
@@ -1268,7 +1270,7 @@ def prompt_list(
 
     registry = PromptRegistry()
     prompts = registry.list_prompts()
-    
+
     print(f"\nPrompt Registry: {len(prompts)} prompts, {registry.total_versions} total versions\n")
     print(f"{'Name':<35} {'Cat':<18} {'Vers':<6} {'Variables'}")
     print("-" * 90)
@@ -1324,10 +1326,10 @@ def prompt_diff(
     diff = registry.diff(name, version_a, version_b)
     print(diff.to_summary())
     print(f"\nLines added ({len(diff.lines_added)}):")
-    for i, line in enumerate(diff.lines_added[:50]):
+    for _i, line in enumerate(diff.lines_added[:50]):
         print(f"  + {line}")
     print(f"\nLines removed ({len(diff.lines_removed)}):")
-    for i, line in enumerate(diff.lines_removed[:50]):
+    for _i, line in enumerate(diff.lines_removed[:50]):
         print(f"  - {line}")
 
 
@@ -1341,8 +1343,8 @@ def prompt_compare(
 ):
     """A/B compare two prompt versions against benchmarks."""
     from agentops.prompts.comparator import create_comparator
-    from agentops.prompts.state import ComparisonConfig
     from agentops.prompts.registry import PromptRegistry
+    from agentops.prompts.state import ComparisonConfig
 
     registry = PromptRegistry()
     v_a = registry.get(prompt_name, version_a)
@@ -1380,8 +1382,8 @@ def prompt_optimize(
     output_dir: str = typer.Option(None, "--output", "-o", help="Output directory for report"),
 ):
     """Iteratively optimize a prompt using evaluation feedback."""
-    from agentops.prompts.registry import PromptRegistry
     from agentops.prompts.comparator import create_optimizer
+    from agentops.prompts.registry import PromptRegistry
 
     registry = PromptRegistry()
     v = registry.get(prompt_name, version)
@@ -1445,7 +1447,7 @@ def structured_validate(
     """
     import sys as _sys
 
-    from agentops.structured_output.state import JSONSchemaField, JSONSchema
+    from agentops.structured_output.state import JSONSchema, JSONSchemaField
     from agentops.structured_output.validator import SchemaValidator
 
     # Built-in schemas
@@ -1494,10 +1496,7 @@ def structured_validate(
         raise typer.Exit(1)
 
     # Read input
-    if json_input == "-":
-        raw = _sys.stdin.read().strip()
-    else:
-        raw = json_input
+    raw = _sys.stdin.read().strip() if json_input == "-" else json_input
 
     validator = SchemaValidator(schema)
     result = validator.validate(raw)
@@ -1528,8 +1527,8 @@ def structured_validate(
 def structured_eval(
     benchmark: str = typer.Option("all", "--benchmark", "-b", help="Benchmark name: structured-output, function-calling, or all"),
     profile: str = typer.Option("production", "--profile", "-p", help="Agent profile: perfect, production, development, unreliable"),
-    output_dir: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory for reports"),
-    project_dir: Optional[str] = typer.Option(None, "--dir", "-d", help="Project root directory"),
+    output_dir: str | None = typer.Option(None, "--output", "-o", help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d", help="Project root directory"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Evaluate structured output and function calling quality.
@@ -1541,21 +1540,21 @@ def structured_eval(
     from datetime import datetime
 
     from agentops.evals.benchmarks import (
-        STRUCTURED_OUTPUT_BENCH,
         FUNCTION_CALLING_BENCH,
+        STRUCTURED_OUTPUT_BENCH,
         get_benchmark,
     )
-    from agentops.evals.simulator import SimulatedAgent, get_profile
+    from agentops.evals.simulator import get_profile
+    from agentops.structured_output.metrics import compute_structured_metrics
     from agentops.structured_output.state import (
         JSONSchema,
         JSONSchemaField,
         StructuredOutputReport,
     )
     from agentops.structured_output.validator import (
-        SchemaValidator,
         FunctionCallValidator,
+        SchemaValidator,
     )
-    from agentops.structured_output.metrics import compute_structured_metrics
 
     d = Path(project_dir) if project_dir else _get_project_root()
     out = Path(output_dir) if output_dir else d / "eval_results"
@@ -1745,7 +1744,7 @@ def structured_eval(
         ],
     }
 
-    print(f"Structured Output Evaluation")
+    print("Structured Output Evaluation")
     print(f"Profile: {sim_config.name} — {sim_config.description}")
     print(f"Benchmarks: {len(benchmarks_to_run)}")
     print()
@@ -1831,6 +1830,108 @@ def structured_eval(
 
     if json_output:
         print(json.dumps(report.to_dict(), indent=2))
+
+
+# ── Memory evaluation commands (v0.12) ──────────────────────────────
+
+memory_app = typer.Typer(help="Agent memory evaluation — test recall, degradation, and hallucination")
+app.add_typer(memory_app, name="memory")
+
+
+@memory_app.command()
+def eval(
+    profile: str = typer.Option("production", "--profile", "-p",
+                                 help="Memory profile: perfect, production, development, degraded"),
+    benchmark: str = typer.Option("all", "--benchmark", "-b",
+                                   help="Benchmark name or 'all'"),
+    output_dir: str | None = typer.Option(None, "--output", "-o",
+                                           help="Output directory for reports"),
+    project_dir: str | None = typer.Option(None, "--dir", "-d",
+                                            help="Project root directory"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Evaluate agent memory across multi-turn conversation benchmarks."""
+    from agentops.memory.state import get_memory_profile, MEMORY_PROFILES
+    from agentops.memory.simulator import SimulatedMemoryAgent
+    from agentops.memory.metrics import ALL_MEMORY_BENCHMARKS, MemoryEvaluator
+
+    d = Path(project_dir) if project_dir else _get_project_root()
+    out = Path(output_dir) if output_dir else d / "eval_results" / "memory"
+
+    mem_profile = get_memory_profile(profile)
+    if mem_profile is None:
+        names = [p.name for p in MEMORY_PROFILES]
+        print(f"Profile '{profile}' not found. Available: {', '.join(names)}")
+        raise typer.Exit(1)
+
+    benchmarks_to_run = ALL_MEMORY_BENCHMARKS
+    if benchmark != "all":
+        benchmarks_to_run = [b for b in ALL_MEMORY_BENCHMARKS if b.id == benchmark]
+        if not benchmarks_to_run:
+            names = [b.id for b in ALL_MEMORY_BENCHMARKS]
+            print(f"Benchmark '{benchmark}' not found. Available: {', '.join(names)}")
+            raise typer.Exit(1)
+
+    evaluator = MemoryEvaluator()
+    agent = SimulatedMemoryAgent(profile=mem_profile, seed=42)
+    all_reports = []
+
+    print(f"\nMemory Evaluation — Profile: {profile}")
+    print(f"Benchmarks: {len(benchmarks_to_run)}")
+    print("=" * 60)
+
+    for bench in benchmarks_to_run:
+        print(f"\n  Running: {bench.name} ({bench.id})...")
+        results = agent.run_conversation(bench.turns, task_id=f"mem-{bench.id}")
+        agent.reset()
+        metrics = evaluator.compute_metrics(results)
+        report = evaluator.generate_report(
+            metrics, results, profile,
+            title=f"Memory Eval: {bench.name}",
+        )
+        all_reports.append(report)
+
+        # Save report
+        out.mkdir(parents=True, exist_ok=True)
+        report_path = out / f"{bench.id}_report.json"
+        report_path.write_text(json.dumps(report.to_dict(), indent=2))
+
+        print(f"    Correct: {metrics.correct_recalls}/{metrics.total_tests}"
+              f" | F1: {metrics.memory_f1:.3f}"
+              f" | Degradation: {metrics.degradation_rate:.3f}/turn"
+              f" | Hallucinations: {metrics.hallucinations}")
+
+    # Aggregate summary
+    print(f"\n{'=' * 60}")
+    print(f"Cross-Benchmark Summary ({profile})")
+    print(f"{'=' * 60}")
+    total_correct = sum(r.metrics.correct_recalls for r in all_reports)
+    total_tests = sum(r.metrics.total_tests for r in all_reports)
+    avg_f1 = (
+        sum(r.metrics.memory_f1 for r in all_reports) / len(all_reports)
+        if all_reports else 0
+    )
+    total_hallucinations = sum(r.metrics.hallucinations for r in all_reports)
+    print(f"  Overall: {total_correct}/{total_tests} correct")
+    print(f"  Avg F1: {avg_f1:.3f}")
+    print(f"  Total hallucinations: {total_hallucinations}")
+
+    # Save aggregate
+    agg_report = {
+        "profile": profile,
+        "total_correct": total_correct,
+        "total_tests": total_tests,
+        "avg_f1": avg_f1,
+        "total_hallucinations": total_hallucinations,
+        "benchmarks": [r.to_dict() for r in all_reports],
+    }
+    agg_path = out / "memory_aggregate.json"
+    agg_path.write_text(json.dumps(agg_report, indent=2))
+    print(f"\nReports saved to: {out}/")
+    print(f"Aggregate: {agg_path}")
+
+    if json_output:
+        print(json.dumps(agg_report, indent=2))
 
 
 if __name__ == "__main__":

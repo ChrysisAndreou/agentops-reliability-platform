@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import time
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from .graphs import build_reliability_graph
-from .state import ReliabilityState, create_initial_state
+from .state import create_initial_state
 from .tool_registry import ToolRegistry
 
 

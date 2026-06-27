@@ -36,7 +36,7 @@ class BaselineManifest:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "BaselineManifest":
+    def from_dict(cls, data: dict[str, Any]) -> BaselineManifest:
         return cls(
             name=data["name"],
             created_at=data.get("created_at", ""),
@@ -128,7 +128,7 @@ def load_baseline(path: str | Path, baselines_dir: str | Path | None = None) -> 
 
     # Allow short names: "v0.6" → "<baselines_dir>/v0.6.json"
     if "/" not in str(path) and "\\" not in str(path):
-        if not path.exists() and not path.suffix == ".json":
+        if not path.exists() and path.suffix != ".json":
             if baselines_dir:
                 path = Path(baselines_dir) / f"{path.name}.json"
             else:

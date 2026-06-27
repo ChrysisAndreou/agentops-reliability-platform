@@ -113,7 +113,7 @@ class JSONSchema:
         return schema
 
     @classmethod
-    def from_dict(cls, name: str, schema_dict: dict[str, Any]) -> "JSONSchema":
+    def from_dict(cls, name: str, schema_dict: dict[str, Any]) -> JSONSchema:
         """Parse a simplified JSON Schema dict into field definitions."""
         fields = []
         properties = schema_dict.get("properties", {})

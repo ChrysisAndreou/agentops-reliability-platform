@@ -17,7 +17,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 12 benchmarks (60 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
+- **Systematic evaluation**: 13 benchmarks (65 tasks) with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys.
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
 - **LLM-as-Judge evaluation**: Multi-dimensional quality assessment (accuracy, completeness, relevance, safety, citation, groundedness, clarity) using deterministic or real-LLM judges. Model comparison framework with rankings, dimension breakdowns, and cost-performance Pareto analysis.
 - **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
@@ -28,6 +28,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Live observability dashboard**: WebSocket-powered HTML dashboard with Chart.js visualizations, live trace streaming, failure analysis, and interactive UI (32 tests, v0.10).
 - **Structured output & function calling evaluation**: JSON Schema validation for agent outputs (type checking, required fields, enum/pattern constraints, numeric ranges), function/tool call quality scoring (tool selection correctness, parameter validation, hallucinated tool detection), 2 new benchmarks (10 tasks), and comprehensive CLI for structured output quality gates (v0.11).
 - **Prompt management & optimization**: versioned prompt registry, A/B comparison against benchmarks, iterative optimization using evaluation feedback, 5 built-in templates, 10th benchmark.
+- **Agent memory evaluation (v0.12)**: Multi-turn conversation memory testing across 5 benchmarks (episodic, semantic, working, cross-conversation, degradation) with 4 configurable memory profiles (perfect, production, development, degraded), recall precision/rate metrics, hallucination detection, and per-type breakdowns; 39 new tests.
 
 ---
 
@@ -95,6 +96,7 @@ All 10 benchmarks evaluated with the deterministic simulated agent. [Full evalua
 | prompt-engineering | 0.675 | 80% | 0.867 | 3,038ms |
 | structured-output | — | — | 0.975 | — |
 | function-calling | — | — | 1.000 | — |
+| memory (v0.12) | 0.989 | — | — | — |
 
 **Cross-profile comparison**: Development profile shows -24.4pp regression in guardrails and -19.4pp in hallucination resistance vs production — demonstrating the regression testing framework detecting quality degradation before deployment.
 
@@ -311,7 +313,7 @@ agentops-reliability-platform/
 ├── sample_data/
 │   ├── docs/              # CloudDeploy product docs (3 files, 7 chunks)
 │   └── tickets/           # 10 realistic support/quality tickets
-├── tests/                 # 402 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard, structured_output)\n├── docker/                # Dockerfile + docker-compose
+├── tests/                 # 441 pytest tests (core, evals, guardrails, OTEL, simulator, multi-agent, judge, model-benchmark, prompts, dashboard, structured_output, memory)\n├── docker/                # Dockerfile + docker-compose
 ├── k8s/                   # Kubernetes manifests (Deployment, HPA, Ingress, etc.)
 ├── terraform/             # Terraform module for GKE/EKS/AKS provisioning
 └── .github/workflows/     # CI (lint, type-check, test, build)
@@ -700,6 +702,7 @@ print(f"Valid: {result.is_valid}, Adherence: {result.adherence_score:.1%}")
 - [x] Prompt management & optimization — versioned registry, A/B comparison, iterative optimization, 5 templates, 10th benchmark (v0.9)
 - [x] Live observability dashboard — WebSocket streaming, Chart.js visualizations, failure analysis, dark UI, 32 tests (v0.10)
 - [x] Structured output & function calling evaluation — JSON Schema validation, tool call quality scoring, 2 benchmarks (10 tasks), 56 tests (v0.11)
+- [x] Agent memory evaluation — multi-turn conversation recall, 5 benchmarks, 4 profiles, hallucination detection, 39 tests (v0.12)
 - [ ] Streaming verification (partial response checking)
 - [ ] SDK/client library for agent instrumentation (`pip install agentops`)
 - [ ] Alerting integrations (Slack, email, webhook)

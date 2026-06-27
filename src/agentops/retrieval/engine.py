@@ -12,7 +12,7 @@ Supports:
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
@@ -78,7 +78,7 @@ class RetrievalEngine:
         if not self._initialized or not self._chunks:
             return []
 
-        t0 = time.time()
+        time.time()
 
         bm25_results = self._search_bm25(query, k * 2) if self._bm25 else []
         dense_results = self._search_dense(query, k * 2) if self.use_dense and self._dense_embeddings is not None else []
@@ -155,14 +155,8 @@ class RetrievalEngine:
     ) -> list[tuple[int, float, str]]:
         """Reciprocal rank fusion of BM25 and dense results."""
         # Normalize scores
-        if bm25:
-            max_bm25 = max(s[1] for s in bm25)
-        else:
-            max_bm25 = 1.0
-        if dense:
-            max_dense = max(s[1] for s in dense)
-        else:
-            max_dense = 1.0
+        max_bm25 = max(s[1] for s in bm25) if bm25 else 1.0
+        max_dense = max(s[1] for s in dense) if dense else 1.0
 
         fused: dict[int, float] = {}
         for idx, score, _ in bm25:

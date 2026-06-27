@@ -8,9 +8,9 @@ Stores complete agent execution traces in SQLite, providing:
 - Trace replay for deterministic evaluation
 """
 
-from .store import TraceStore
 from .classifier import FailureClassifier, FailurePattern
 from .opentelemetry import OTelObserver
+from .store import TraceStore
 
 __all__ = [
     "TraceStore",

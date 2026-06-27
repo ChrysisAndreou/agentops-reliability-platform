@@ -49,27 +49,25 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Generator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
-from typing import Any, Generator, Optional
+from dataclasses import dataclass
+from typing import Any
 
 # ── Optional imports — OTEL may not be installed ──────────────────────
 
 OTEL_AVAILABLE = False
 try:
-    from opentelemetry import trace as otel_trace
     from opentelemetry import metrics as otel_metrics
+    from opentelemetry import trace as otel_trace
+    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+    from opentelemetry.sdk.resources import SERVICE_NAME, Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import \
-        OTLPSpanExporter
-    from opentelemetry.sdk.metrics import MeterProvider
-    from opentelemetry.sdk.metrics.export import \
-        PeriodicExportingMetricReader
-    from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import \
-        OTLPMetricExporter
-    from opentelemetry.sdk.resources import SERVICE_NAME, Resource
-    from opentelemetry.trace import Status, StatusCode, SpanKind
+    from opentelemetry.trace import SpanKind, Status, StatusCode
     OTEL_AVAILABLE = True
 except ImportError:
     pass
@@ -98,7 +96,7 @@ ATTR_MODEL = "agentops.model"
 class _NoOpSpan:
     """Stand-in when OTEL is disabled. Supports context manager protocol."""
 
-    def __enter__(self) -> "_NoOpSpan":
+    def __enter__(self) -> _NoOpSpan:
         return self
 
     def __exit__(self, *args: Any) -> None:

@@ -27,9 +27,6 @@ from .patterns import (
     INJECTION_PATTERNS,
     MODERATION_PATTERNS,
     TOOL_MISUSE_PATTERNS,
-    InjectionPattern,
-    ModerationPattern,
-    ToolMisusePattern,
 )
 from .state import (
     GuardrailResult,
@@ -40,7 +37,6 @@ from .state import (
     ToolMisuseCategory,
     ToolMisuseDetection,
 )
-
 
 # ── Simulated Detector ──────────────────────────────────────────────────
 

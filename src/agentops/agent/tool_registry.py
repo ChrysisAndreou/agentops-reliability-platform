@@ -11,12 +11,11 @@ Unlike a simple dict of functions, this registry:
 
 from __future__ import annotations
 
-import json
 import time
-import traceback
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Callable
+from typing import Any
 
 from pydantic import BaseModel, Field
 

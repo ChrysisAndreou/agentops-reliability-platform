@@ -15,12 +15,11 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any, Literal
 
 from langchain_core.language_models import BaseChatModel
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langgraph.graph import END, StateGraph
+from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 
 from .state import ReliabilityState, ReliabilityStep
 from .tool_registry import ToolRegistry
@@ -215,13 +214,13 @@ def build_reliability_graph(
         # Execute retrieval
         all_chunks = []
         citation_map = {}
-        for i, query in enumerate(queries[:3]):
+        for _i, query in enumerate(queries[:3]):
             try:
                 chunks = retrieval_fn(query, k=5)
                 for chunk in chunks:
                     all_chunks.append(chunk)
                     citation_map[chunk["chunk_id"]] = chunk["content"]
-            except Exception as e:
+            except Exception:
                 pass
 
         # Deduplicate
@@ -295,7 +294,7 @@ def build_reliability_graph(
             latency = (time.time() - t0) * 1000
             trace = _step_trace(state, "executor", "tool_call",
                                 f"Step {step_idx + 1}: {plan[step_idx][:100] if plan else 'execute'}",
-                                f"Final answer produced",
+                                "Final answer produced",
                                 latency)
             return {
                 "final_answer": parsed["final_answer"],

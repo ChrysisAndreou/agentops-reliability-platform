@@ -5,7 +5,6 @@ structured reports with metrics, failure analysis, and recommendations.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import time
 from dataclasses import dataclass, field
@@ -14,10 +13,10 @@ from typing import Any
 
 import pandas as pd
 
-from .metrics import ReliabilityMetrics, compute_metrics
-from .benchmarks import ReliabilityBenchmark, BenchmarkTask, ALL_BENCHMARKS, BENCHMARK_MAP
-from ..tracing.store import TraceStore
 from ..tracing.classifier import FailureClassifier
+from ..tracing.store import TraceStore
+from .benchmarks import ALL_BENCHMARKS, ReliabilityBenchmark
+from .metrics import ReliabilityMetrics, compute_metrics
 
 
 @dataclass
@@ -183,7 +182,7 @@ class EvalHarness:
         sim_config=None,
     ) -> EvalReport:
         """Run benchmark with a simulated agent (no API keys needed)."""
-        from .simulator import SimulatedAgent, PRODUCTION_AGENT
+        from .simulator import PRODUCTION_AGENT, SimulatedAgent
 
         if sim_config is None:
             sim_config = PRODUCTION_AGENT

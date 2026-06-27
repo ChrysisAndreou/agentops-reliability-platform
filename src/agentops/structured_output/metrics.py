@@ -7,11 +7,9 @@ and combined composite metrics for structured output evaluation.
 
 from __future__ import annotations
 
-from typing import Any
-
 from .state import (
-    SchemaValidationResult,
     FunctionCallResult,
+    SchemaValidationResult,
     StructuredOutputMetrics,
 )
 

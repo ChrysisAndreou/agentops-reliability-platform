@@ -1,0 +1,139 @@
+{
+  "baseline_name": "v1.0-production",
+  "profile": "production",
+  "has_regressions": false,
+  "exit_code": 0,
+  "run_timestamp": "2026-06-27 01:24:12",
+  "benchmarks": [
+    {
+      "name": "support-tickets",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "systems-quality",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "tool-use",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "multi-step",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "edge-cases",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "hallucination-resistance",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "multi-agent",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "guardrails",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "llm-judge",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    },
+    {
+      "name": "prompt-engineering",
+      "has_regressions": false,
+      "regressions": [],
+      "improvements": [],
+      "stable": [
+        "composite_mean",
+        "groundedness_mean",
+        "citation_precision_mean",
+        "verification_pass_rate",
+        "avg_latency_ms"
+      ]
+    }
+  ]
+}

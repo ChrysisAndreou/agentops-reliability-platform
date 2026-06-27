@@ -12,17 +12,14 @@ The comparator works in two modes:
 
 from __future__ import annotations
 
-import copy
 import statistics
 import time
-from dataclasses import dataclass, field
-from typing import Any, Optional
 
 from agentops.prompts.state import (
     ComparisonConfig,
     ComparisonResult,
-    OptimizationRun,
     OptimizationResult,
+    OptimizationRun,
 )
 
 
@@ -148,8 +145,8 @@ class PromptComparator:
             )
         else:
             recommendation = (
-                f"Version A and B are statistically tied. "
-                f"Consider other factors (cost, latency, simplicity) to choose."
+                "Version A and B are statistically tied. "
+                "Consider other factors (cost, latency, simplicity) to choose."
             )
 
         return ComparisonResult(
@@ -252,7 +249,7 @@ class PromptOptimizer:
     def __init__(
         self,
         registry=None,
-        comparator: Optional[PromptComparator] = None,
+        comparator: PromptComparator | None = None,
         simulated: bool = True,
     ):
         self._registry = registry
@@ -265,7 +262,7 @@ class PromptOptimizer:
         initial_content: str,
         max_iterations: int = 5,
         target_score: float = 0.85,
-        benchmark_names: Optional[list[str]] = None,
+        benchmark_names: list[str] | None = None,
     ) -> OptimizationResult:
         """Optimize a prompt iteratively.
 
@@ -415,7 +412,6 @@ class PromptOptimizer:
         Targets the lowest-scoring metric and adds relevant instructions.
         """
         lowest_metric = min(scores, key=scores.get)
-        improvements: list[str] = []
 
         improvements_map = {
             "groundedness": [

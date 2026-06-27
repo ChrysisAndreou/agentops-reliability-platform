@@ -7,7 +7,7 @@ formatting for the reliability agent's evidence grounding workflow.
 """
 
 from .engine import RetrievalEngine, RetrievalResult
-from .ingest import DocumentIngestor, DocumentChunk
+from .ingest import DocumentChunk, DocumentIngestor
 
 __all__ = [
     "RetrievalEngine",
