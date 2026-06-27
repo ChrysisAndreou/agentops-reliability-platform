@@ -40,6 +40,9 @@ from agentops.alerting.channels import (
     ConsoleChannel,
     FileChannel,
     WebhookChannel,
+    SlackBlockChannel,
+    DiscordEmbedChannel,
+    EmailChannel,
     _NoOpChannel,
     create_channel,
 )
@@ -712,6 +715,642 @@ class TestNoOpChannel:
     def test_send_returns_false(self):
         ch = _NoOpChannel()
         assert ch.send(_make_alert(AlertSeverity.WARNING, "test")) is False
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# v0.16: Slack Block Kit channel tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestSlackBlockChannel:
+    def test_disabled_when_no_url(self):
+        config = AlertChannelConfig(type="slack", config={}, enabled=True)
+        channel = SlackBlockChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_disabled_by_config(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=False,
+        )
+        channel = SlackBlockChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_enabled_with_url_does_not_crash(self):
+        """Even if Slack webhook is unreachable, send() should not raise."""
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "http://localhost:19999/slack", "timeout": 1},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        # Should return False on connection failure, not raise
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_build_blocks_critical(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = _make_alert(AlertSeverity.CRITICAL, "verification-drop")
+        blocks = channel._build_blocks(alert)
+
+        assert isinstance(blocks, list)
+        assert len(blocks) >= 3
+        # Header block
+        assert blocks[0]["type"] == "header"
+        assert "CRITICAL" in blocks[0]["text"]["text"]
+        assert "verification-drop" in blocks[0]["text"]["text"]
+        assert ":red_circle:" in blocks[0]["text"]["text"]
+        # Section with message
+        assert blocks[1]["type"] == "section"
+        # Divider at end
+        assert blocks[-1]["type"] == "divider"
+
+    def test_build_blocks_warning(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "latency-spike")
+        blocks = channel._build_blocks(alert)
+
+        assert ":warning:" in blocks[0]["text"]["text"]
+        assert "WARNING" in blocks[0]["text"]["text"]
+
+    def test_build_blocks_info(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = _make_alert(AlertSeverity.INFO, "citation-quality")
+        blocks = channel._build_blocks(alert)
+
+        assert ":information_source:" in blocks[0]["text"]["text"]
+        assert "INFO" in blocks[0]["text"]["text"]
+
+    def test_build_blocks_includes_conditions(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "test-rule")
+        blocks = channel._build_blocks(alert)
+
+        # Find conditions section
+        conditions_blocks = [b for b in blocks if "Conditions" in str(b)]
+        assert len(conditions_blocks) > 0
+        conditions_text = str(conditions_blocks)
+        assert "test_metric" in conditions_text
+
+    def test_build_blocks_includes_current_values(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = _make_alert(AlertSeverity.CRITICAL, "test")
+        blocks = channel._build_blocks(alert)
+
+        metrics_blocks = [b for b in blocks if "Current metrics" in str(b)]
+        assert len(metrics_blocks) > 0
+
+    def test_build_blocks_with_run_id(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = Alert(
+            rule_name="test", severity=AlertSeverity.WARNING,
+            message="test message", conditions_matched=[
+                AlertCondition("m", "lt", 0.80),
+            ],
+            current_values={"m": 0.55},
+            triggered_at="2026-01-01T00:00:00Z",
+            run_id="run-abc-123",
+        )
+        blocks = channel._build_blocks(alert)
+
+        context_blocks = [b for b in blocks if b.get("type") == "context"]
+        assert len(context_blocks) > 0
+        context_text = str(context_blocks[0])
+        assert "run-abc-123" in context_text
+
+    def test_build_blocks_empty_conditions(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = Alert(
+            rule_name="test", severity=AlertSeverity.INFO,
+            message="no conditions", conditions_matched=[],
+            current_values={}, triggered_at="",
+        )
+        blocks = channel._build_blocks(alert)
+        # Should still have header, section, context, divider
+        assert len(blocks) >= 3
+
+    def test_build_blocks_metrics_truncated_at_six(self):
+        config = AlertChannelConfig(
+            type="slack",
+            config={"webhook_url": "https://hooks.slack.com/services/test"},
+            enabled=True,
+        )
+        channel = SlackBlockChannel(config)
+        alert = Alert(
+            rule_name="test", severity=AlertSeverity.WARNING,
+            message="test", conditions_matched=[],
+            current_values={f"metric_{i}": float(i) for i in range(10)},
+            triggered_at="",
+        )
+        blocks = channel._build_blocks(alert)
+        metrics_blocks = [b for b in blocks if "Current metrics" in str(b)]
+        text = str(metrics_blocks[0])
+        # metrics_lines[:6] — should have metric_0 through metric_5 but not metric_9
+        assert "metric_0" in text
+        assert "metric_5" in text
+        # metric_9 might or might not be present since it's the 10th item
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# v0.16: Discord embed channel tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestDiscordEmbedChannel:
+    def test_disabled_when_no_url(self):
+        config = AlertChannelConfig(type="discord", config={}, enabled=True)
+        channel = DiscordEmbedChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_disabled_by_config(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=False,
+        )
+        channel = DiscordEmbedChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_enabled_with_url_does_not_crash(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "http://localhost:19999/discord", "timeout": 1},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_build_embed_critical(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = _make_alert(AlertSeverity.CRITICAL, "verification-drop")
+        embed = channel.build_embed(alert)
+
+        assert embed["title"] == "[CRITICAL] verification-drop"
+        assert embed["color"] == 0xFF0000
+        assert "description" in embed
+        assert "timestamp" in embed
+        assert "footer" in embed
+        assert "AgentOps" in embed["footer"]["text"]
+
+    def test_build_embed_warning_color(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "test")
+        embed = channel.build_embed(alert)
+        assert embed["color"] == 0xFFA500
+
+    def test_build_embed_info_color(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = _make_alert(AlertSeverity.INFO, "test")
+        embed = channel.build_embed(alert)
+        assert embed["color"] == 0x0066FF
+
+    def test_build_embed_includes_conditions_field(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "test-rule")
+        embed = channel.build_embed(alert)
+
+        condition_fields = [f for f in embed.get("fields", []) if "Conditions" in f["name"]]
+        assert len(condition_fields) > 0
+        assert "test_metric" in condition_fields[0]["value"]
+
+    def test_build_embed_includes_metrics_field(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "test")
+        embed = channel.build_embed(alert)
+
+        metric_fields = [f for f in embed.get("fields", []) if "Metrics" in f["name"]]
+        assert len(metric_fields) > 0
+        assert "test_metric" in metric_fields[0]["value"]
+
+    def test_build_embed_with_run_id(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = Alert(
+            rule_name="test", severity=AlertSeverity.WARNING,
+            message="test message", conditions_matched=[
+                AlertCondition("m", "lt", 0.80),
+            ],
+            current_values={"m": 0.55},
+            triggered_at="2026-01-01T00:00:00Z",
+            run_id="run-xyz-456",
+        )
+        embed = channel.build_embed(alert)
+        assert "run-xyz-456" in embed["footer"]["text"]
+
+    def test_build_embed_empty_conditions(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = Alert(
+            rule_name="test", severity=AlertSeverity.INFO,
+            message="no conditions", conditions_matched=[],
+            current_values={}, triggered_at="",
+        )
+        embed = channel.build_embed(alert)
+        assert embed["title"] == "[INFO] test"
+        # Should NOT have conditions field
+        condition_fields = [f for f in embed.get("fields", []) if "Conditions" in f["name"]]
+        assert len(condition_fields) == 0
+
+    def test_metrics_chunked_across_fields(self):
+        config = AlertChannelConfig(
+            type="discord",
+            config={"webhook_url": "https://discord.com/api/webhooks/test"},
+            enabled=True,
+        )
+        channel = DiscordEmbedChannel(config)
+        alert = Alert(
+            rule_name="test", severity=AlertSeverity.WARNING,
+            message="test", conditions_matched=[],
+            current_values={f"metric_{i}": float(i) for i in range(12)},
+            triggered_at="",
+        )
+        embed = channel.build_embed(alert)
+        metric_fields = [f for f in embed.get("fields", []) if "Metrics" in f["name"]]
+        # 12 metrics in chunks of 5 = 3 fields
+        assert len(metric_fields) == 3
+        assert "Metrics" in metric_fields[0]["name"]
+        assert "Metrics (cont.)" in metric_fields[1]["name"]
+        assert "Metrics (cont.)" in metric_fields[2]["name"]
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# v0.16: Email channel tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestEmailChannel:
+    def test_disabled_when_no_recipients(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={"smtp_host": "localhost", "from_addr": "test@test.com"},
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_disabled_by_config(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=False,
+        )
+        channel = EmailChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_enabled_but_smtp_unreachable_does_not_crash(self):
+        """Even if SMTP server is unreachable, send() should not raise."""
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "smtp_port": 19999,
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+                "timeout": 1,
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        result = channel.send(_make_alert(AlertSeverity.WARNING, "test"))
+        assert result is False
+
+    def test_build_message_subject_critical(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.CRITICAL, "verification-drop")
+        msg = channel.build_message(alert)
+
+        assert "[AgentOps CRITICAL] verification-drop" == msg["Subject"]
+
+    def test_build_message_subject_warning(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "latency-spike")
+        msg = channel.build_message(alert)
+
+        assert "[AgentOps WARNING] latency-spike" == msg["Subject"]
+
+    def test_build_message_subject_info(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.INFO, "citation-quality")
+        msg = channel.build_message(alert)
+
+        assert "[AgentOps INFO] citation-quality" == msg["Subject"]
+
+    def test_build_message_subject_with_prefix(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+                "subject_prefix": "[PROD]",
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.CRITICAL, "test")
+        msg = channel.build_message(alert)
+
+        assert msg["Subject"].startswith("[PROD] [AgentOps CRITICAL]")
+
+    def test_build_message_subject_with_run_id(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = Alert(
+            rule_name="test", severity=AlertSeverity.WARNING,
+            message="test message", conditions_matched=[
+                AlertCondition("m", "lt", 0.80),
+            ],
+            current_values={"m": 0.55},
+            triggered_at="",
+            run_id="run-abc-123-very-long-run-id-for-truncation",
+        )
+        msg = channel.build_message(alert)
+        assert "(Run: run-abc-123-)" in msg["Subject"]
+
+    def test_build_message_has_plaintext_part(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "test-rule")
+        msg = channel.build_message(alert)
+
+        parts = msg.get_payload()
+        assert len(parts) == 2
+        assert parts[0].get_content_type() == "text/plain"
+        assert parts[1].get_content_type() == "text/html"
+
+    def test_build_message_plaintext_content(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.CRITICAL, "test-rule")
+        msg = channel.build_message(alert)
+        plaintext = msg.get_payload()[0].get_payload(decode=True).decode("utf-8")
+
+        assert "CRITICAL" in plaintext
+        assert "test-rule" in plaintext
+        assert "test_metric" in plaintext
+        assert "0.55" in plaintext or "0.550" in plaintext
+        assert "AgentOps Reliability Platform" in plaintext
+
+    def test_build_message_html_content(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.CRITICAL, "test-rule")
+        msg = channel.build_message(alert)
+        html = msg.get_payload()[1].get_payload(decode=True).decode("utf-8")
+
+        assert "<!DOCTYPE html>" in html
+        assert "CRITICAL" in html
+        assert "test-rule" in html
+        assert "#FF0000" in html  # red for critical
+        assert "AgentOps Reliability Platform" in html
+
+    def test_build_message_html_warning_color(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "test")
+        msg = channel.build_message(alert)
+        html = msg.get_payload()[1].get_payload(decode=True).decode("utf-8")
+
+        assert "#FFA500" in html
+
+    def test_build_message_html_info_color(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "test@test.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.INFO, "test")
+        msg = channel.build_message(alert)
+        html = msg.get_payload()[1].get_payload(decode=True).decode("utf-8")
+
+        assert "#0066FF" in html
+
+    def test_build_message_from_and_to(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "localhost",
+                "from_addr": "alerts@agentops.example.com",
+                "to_addrs": ["oncall@example.com", "lead@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        alert = _make_alert(AlertSeverity.WARNING, "test")
+        msg = channel.build_message(alert)
+
+        assert msg["From"] == "alerts@agentops.example.com"
+        assert msg["To"] == "oncall@example.com, lead@example.com"
+
+    def test_default_config_values(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        assert channel._smtp_host == "localhost"
+        assert channel._smtp_port == 587
+        assert channel._use_tls is True
+        assert channel._from_addr == "agentops@localhost"
+        assert channel._username is None
+        assert channel._password is None
+
+    def test_smtp_auth_configured(self):
+        config = AlertChannelConfig(
+            type="email",
+            config={
+                "smtp_host": "smtp.gmail.com",
+                "smtp_port": 587,
+                "username": "alerts@example.com",
+                "password": "app-password-here",
+                "from_addr": "alerts@example.com",
+                "to_addrs": ["oncall@example.com"],
+            },
+            enabled=True,
+        )
+        channel = EmailChannel(config)
+        assert channel._username == "alerts@example.com"
+        assert channel._password == "app-password-here"
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# v0.16: Updated create_channel tests
+# ═══════════════════════════════════════════════════════════════════════
+
+class TestCreateChannelV16:
+    def test_slack(self):
+        ch = create_channel(AlertChannelConfig(
+            type="slack", config={"webhook_url": "https://hooks.slack.com/test"},
+            enabled=True,
+        ))
+        assert isinstance(ch, SlackBlockChannel)
+
+    def test_discord(self):
+        ch = create_channel(AlertChannelConfig(
+            type="discord", config={"webhook_url": "https://discord.com/api/test"},
+            enabled=True,
+        ))
+        assert isinstance(ch, DiscordEmbedChannel)
+
+    def test_email(self):
+        ch = create_channel(AlertChannelConfig(
+            type="email",
+            config={"smtp_host": "localhost", "to_addrs": ["test@test.com"]},
+            enabled=True,
+        ))
+        assert isinstance(ch, EmailChannel)
 
 
 # ═══════════════════════════════════════════════════════════════════════

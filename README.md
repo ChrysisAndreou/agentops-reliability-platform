@@ -5,7 +5,7 @@
 [![CI](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-706%20passed-brightgreen)](https://github.com/ChrysisAndreou/agentops-reliability-platform)
+[![Tests](https://img.shields.io/badge/tests-747%20passed-brightgreen)](https://github.com/ChrysisAndreou/agentops-reliability-platform)
 
 ---
 
@@ -18,7 +18,7 @@ LLM agents that use tools and retrieval are powerful but unreliable in productio
 - **Reliability-first agent workflow**: plan → retrieve → execute → verify → respond, with a verification gate that catches hallucinations before they reach users.
 - **Hybrid retrieval with citations**: BM25 + dense vector search with per-claim citation tracking.
 - **Persistent trace store**: SQLite-backed trace persistence with query, replay, and failure analysis.
-- **Systematic evaluation**: 14 benchmarks with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys. SDK for agent instrumentation (v0.14).
+- **Systematic evaluation**: 14 benchmarks with groundedness, citation precision, verification pass rate, and latency metrics. Simulated agent backend enables demo/eval without API keys. SDK for agent instrumentation (v0.14). Alerting integrations for Slack, Discord, and email (v0.16).
 - **Comparative evaluation**: A/B testing between agent configurations with statistical significance detection and regression monitoring.
 - **LLM-as-Judge evaluation**: Multi-dimensional quality assessment (accuracy, completeness, relevance, safety, citation, groundedness, clarity) using deterministic or real-LLM judges. Model comparison framework with rankings, dimension breakdowns, and cost-performance Pareto analysis.
 - **Multi-agent coordination**: Supervisor-worker topology with inter-agent message tracing, coordination metrics, and a 5-task multi-agent benchmark.
@@ -896,6 +896,69 @@ metrics = interceptor.get_metrics()
 
 **112 new tests** — state models, claim extraction (sentence/chunk boundary/entity/non-claim filtering), verification (grounded/ungrounded/batch/entity/abort logic), interceptor (process/simulate/sync+async generators/e2e scenarios).
 
+### Alerting Integrations (v0.16)
+
+Turnkey integrations for incident response pipelines. Routes AgentOps alerts to Slack, Discord, and email — no external dependencies beyond Python stdlib.
+
+**Slack Block Kit (`type: slack`):**
+- Rich Block Kit messages with severity-colored headers (red for critical, orange for warning, blue for info)
+- Structured sections for alert message, triggered conditions, and current metrics
+- Context footer with timestamp and run ID
+- Emoji indicators (:red_circle:, :warning:, :information_source:)
+- Zero-dependency — uses stdlib `urllib`
+
+**Discord Embeds (`type: discord`):**
+- Discord embed objects with colored sidebars (0xFF0000, 0xFFA500, 0x0066FF)
+- Structured fields for conditions and metrics with automatic chunking (max 5 per field)
+- Timestamp and AgentOps-branded footer
+- Public `build_embed()` method for testing without network
+
+**Email via SMTP (`type: email`):**
+- Multipart MIME email with HTML and plaintext alternatives
+- Severity-colored HTML body with inline CSS (no external stylesheets)
+- Configurable SMTP host, port, TLS, and authentication
+- Custom subject prefix support (e.g., `[PROD]`)
+- Run ID in subject for threading/ filtering
+- Uses Python stdlib `smtplib` + `email` — zero external dependencies
+- Graceful degradation: returns `False` on SMTP errors, never raises
+
+**Python API:**
+
+```python
+from agentops.alerting import AlertChannelConfig, create_channel
+
+# Slack
+slack = create_channel(AlertChannelConfig(
+    type="slack",
+    config={"webhook_url": "https://hooks.slack.com/services/T.../B.../..."},
+))
+slack.send(alert)
+
+# Discord
+discord = create_channel(AlertChannelConfig(
+    type="discord",
+    config={"webhook_url": "https://discord.com/api/webhooks/..."},
+))
+discord.send(alert)
+
+# Email
+email = create_channel(AlertChannelConfig(
+    type="email",
+    config={
+        "smtp_host": "smtp.gmail.com",
+        "smtp_port": 587,
+        "use_tls": True,
+        "username": "alerts@example.com",
+        "password": "app-password",
+        "from_addr": "alerts@example.com",
+        "to_addrs": ["oncall@example.com"],
+    },
+))
+email.send(alert)
+```
+
+**41 new tests** — Slack (formatting: blocks for each severity, conditions, metrics truncation, run ID, empty conditions), Discord (embed structure, colors per severity, conditions fields, metrics chunking, run ID), Email (MIME multipart structure, subject formatting for all severities, subject prefix, HTML color coding, plaintext content, SMTP config defaults, auth configuration), factory registration for all three new types.
+
 ---
 
 ## Roadmap
@@ -915,7 +978,7 @@ metrics = interceptor.get_metrics()
 - [x] Production alerting — 11 rules, 3 channels, 4 profiles, 5 eval scenarios, cooldowns, CI integration, 82 tests (v0.13)
 - [x] SDK / client library — decorators, context managers, logging helpers, HTTP client, CLI, 71 tests (v0.14)
 - [x] Streaming verification — real-time claim checking, 4 strategies, abort-on-hallucination, sync/async generators, CLI eval, 112 tests (v0.15)
-- [ ] Alerting integrations (Slack, email, turnkey webhook)
+- [x] Alerting integrations — Slack Block Kit, Discord embeds, SMTP email, 41 tests (v0.16)
 - [ ] SDK package published to PyPI (`pip install agentops`)
 
 ---

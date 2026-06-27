@@ -7,10 +7,8 @@ Completes the observability loop: collect (traces) → evaluate (benchmarks)
 agent quality degrades — verification pass rates drop, hallucinations
 spike, latency balloons — before users notice.
 
-Module for v0.13: provides alert state models, configurable rule engine,
-built-in alert rules for common failure patterns, and pluggable channel
-providers (console, file, JSON webhook). All testable without API keys
-via deterministic trace/eval data.
+Provider for v0.16: also Slack Block Kit, Discord embeds, and SMTP email.
+All testable without API keys via deterministic trace/eval data.
 """
 
 from agentops.alerting.state import (
@@ -34,6 +32,9 @@ from agentops.alerting.channels import (
     ConsoleChannel,
     FileChannel,
     WebhookChannel,
+    SlackBlockChannel,
+    DiscordEmbedChannel,
+    EmailChannel,
     create_channel,
 )
 from agentops.alerting.manager import AlertManager
@@ -55,6 +56,9 @@ __all__ = [
     "ConsoleChannel",
     "FileChannel",
     "WebhookChannel",
+    "SlackBlockChannel",
+    "DiscordEmbedChannel",
+    "EmailChannel",
     "create_channel",
     "AlertManager",
 ]
