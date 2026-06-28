@@ -23,3 +23,4 @@
 ## Remaining
 
 - [x] v0.18 — Production Readiness Assessment (8-dimension composite score, CI gate, 5 scenarios)
+- [x] v0.19 — Pluggable LLM backends (OpenAI, Anthropic, DeepSeek) with RealLLMAgent for non-simulated benchmarks
