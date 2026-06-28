@@ -8,6 +8,7 @@ improving the reliability of tool-using AI agents. Provides:
 - Production RAG retrieval: hybrid search (BM25+dense), multiple chunking strategies (recursive, semantic, paragraph), cross-encoder/LLM reranking, BEIR-style evaluation with NDCG/MRR/Recall/Precision/MAP metrics, built-in retrieval benchmark corpus (20 docs, 10 queries)
 - SQLite-backed trace store with replay and failure classification
 - Systematic evaluation harness with reliability metrics (20 benchmarks)
+- Streaming Performance Evaluation: TTFT, inter-token latency (P50/P90/P95/P99), tokens-per-second throughput, stall detection, partial-output quality snapshots at 25%/50%/75%, 10-query benchmark corpus across 4 response categories (short/medium/long/technical), regression testing with configurable tolerance thresholds
 - W&B experiment tracking, artifact management, and hyperparameter sweeps
 - Pluggable LLM backends (OpenAI, Anthropic, DeepSeek) with real-API agents
 - Model Router with cost/latency/capability-aware routing and budget enforcement

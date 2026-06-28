@@ -30,6 +30,6 @@
 
 - [x] v0.21 — Model Router (cost/latency/capability-aware routing, 5 strategies, budget enforcement, per-model stats)
 
-## Completed (22/22)
+## Completed (23/23)
 
-- [x] v0.22 — Production RAG Retrieval (RecursiveCharacterSplitter, SemanticChunker, CrossEncoderReranker, LLMReranker, BEIR-style eval metrics: NDCG@k, MRR, Recall@k, Precision@k, MAP, context_relevance, answer_faithfulness)
+- [x] v0.23 — Streaming Performance Evaluation (TTFT, inter-token latency P50/P90/P95/P99, TPS throughput, stall detection, partial-output quality snapshots, 10-query benchmark corpus across 4 response categories, regression testing with tolerance thresholds, simulated stream for CI reproducibility)
