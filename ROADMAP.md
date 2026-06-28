@@ -37,3 +37,7 @@
 ## Completed (24/24)
 
 - [x] v0.24 — Failure Mode Analysis & Taxonomy (33 failure modes across 9 categories, automated detection with pattern-based heuristics, root cause analysis with causal chain modeling, failure clustering with impact scoring, structured FailureAnalysisReport with reliability scoring and prioritized remediation recommendations, 66 tests)
+
+## Completed (26/26)
+
+- [x] v0.26 — Agent A/B Testing & Canary Deployment (statistical experiment framework with chi-squared, Fisher's exact, Bayesian A/B, Welch's t-test, Mann-Whitney U; traffic splitting with deterministic hash-based assignment; canary deployment with staged rollout, automatic regression detection, and configurable rollback conditions; structured A/B evaluation reports with markdown output; 102 tests)
