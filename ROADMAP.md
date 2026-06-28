@@ -1,6 +1,6 @@
 # AgentOps Reliability Platform — Roadmap
 
-## Completed (28/28)
+## Completed (29/29)
 
 - [x] v0.1 — Core agent orchestration (LangGraph pipeline: plan → retrieve → execute → verify → respond)
 - [x] v0.2 — Hybrid retrieval (BM25 + dense embeddings) with citation tracking
@@ -30,3 +30,4 @@
 - [x] v0.26 — Agent A/B Testing & Canary Deployment (statistical experiment framework with chi-squared, Fisher's exact, Bayesian A/B, Welch's t-test, Mann-Whitney U; traffic splitting with deterministic hash-based assignment; canary deployment with staged rollout, automatic regression detection, and configurable rollback conditions; structured A/B evaluation reports with markdown output; 102 tests)
 - [x] v0.27 — Cost Economics & Token Optimization (multi-provider pricing catalog: 20+ models across OpenAI, Anthropic, Cohere, Mistral, Google, Groq, DeepSeek; hierarchical cost tracking: call→agent→session→project with soft/hard budget enforcement; optimization strategies: prompt caching detection, context pruning, model routing, tool call bundling; cost efficiency evaluation: cost-per-task, cost-per-success, budget compliance, Pareto frontier analysis, cost regression detection; 130 tests)
 - [x] v0.28 — EU AI Act Compliance Framework (risk classification per Articles 5-6 and Annex III; 18 high-risk conformity assessment requirements across 13 categories; automated Annex IV technical documentation generation; compliance auditing with pass/fail gating and structured reports; 12-scenario compliance benchmark covering all 4 risk tiers and 6 sectors; 70 tests)
+- [x] v0.29 — Multi-Agent System Evaluation Framework (10-task coordination benchmark across 4 difficulty tiers; 6 coordination quality metrics: decomposition quality, routing accuracy, coordination efficiency, conflict resolution, synthesis quality, load balance; scalability scoring across difficulty levels; structured markdown evaluation reports with per-pattern breakdowns; 65 tests)

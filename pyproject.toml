@@ -1,7 +1,7 @@
 [project]
 name = "agentops-reliability-platform"
-version = "0.26.0"
-description = "Production-oriented AgentOps reliability and evaluation platform for tool-using AI agents — with A/B testing and canary deployment (statistical experiment framework with chi-squared, Bayesian, Welch's t-test), security red-teaming (27 attack techniques, MITRE ATLAS mapping), failure mode analysis (33-mode taxonomy, root cause analysis), production RAG (chunking, reranking, BEIR-style metrics), model router (cost/latency-aware), streaming performance evaluation, SDK for agent instrumentation, live observability dashboard, Slack/Discord/Email alerting, W&B experiment tracking, hyperparameter sweeps, 26 evaluation benchmarks, and 1,302+ tests"
+version = "0.29.0"
+description = "Production-oriented AgentOps reliability and evaluation platform for tool-using AI agents — with multi-agent coordination evaluation (10-task coordination benchmark, 6 metrics), EU AI Act compliance framework (risk classification, conformity assessment, automated documentation), cost economics (multi-provider pricing, budget enforcement, Pareto frontier analysis), security red-teaming (27 attack techniques, MITRE ATLAS mapping), failure mode analysis (33-mode taxonomy, root cause analysis), production RAG (chunking, reranking, BEIR-style metrics), model router (cost/latency-aware), statistical A/B testing & canary deployment, streaming performance evaluation, SDK for agent instrumentation, live observability dashboard, Slack/Discord/Email alerting, W&B experiment tracking, hyperparameter sweeps, 20+ evaluation benchmarks, and 1,567+ tests"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
