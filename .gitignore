@@ -13,3 +13,4 @@ eval_results/*.db
 .tmp/
 alerts_production.jsonl
 .coverage
+wandb_local/

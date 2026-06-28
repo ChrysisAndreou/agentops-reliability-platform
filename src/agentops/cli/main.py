@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -2912,6 +2913,240 @@ def readiness_scenarios():
 
 
 app.add_typer(readiness_app, name="readiness")
+
+# ── MLOps Commands (v0.20) ──────────────────────────────────────────
+
+mlops_app = typer.Typer(
+    name="mlops",
+    help="MLOps experiment tracking and hyperparameter optimization via W&B",
+    no_args_is_help=True,
+)
+
+
+@mlops_app.command("sweep")
+def mlops_sweep(
+    sweep_type: str = typer.Option(
+        "agent-profile", "--type", "-t",
+        help="Pre-built sweep type: agent-profile, retrieval",
+    ),
+    output_dir: str = typer.Option(
+        "./sweep_results", "--output", "-o",
+        help="Directory to save sweep results",
+    ),
+):
+    """Run a local hyperparameter sweep without W&B.
+
+    Performs grid search over agent or retrieval parameters and saves
+    results as JSON. Use agent-profile to sweep over simulated agent
+    quality, or retrieval to optimize citation precision.
+
+    Examples:
+        agentops mlops sweep --type agent-profile
+        agentops mlops sweep --type retrieval --output ./results
+    """
+    from agentops.mlops.sweeps import (
+        WandBSweep,
+        agent_profile_sweep,
+        retrieval_sweep,
+    )
+    from agentops.evals.simulator import SimulatedAgent, SimConfig
+
+    sweeps = {
+        "agent-profile": agent_profile_sweep,
+        "retrieval": retrieval_sweep,
+    }
+
+    if sweep_type not in sweeps:
+        print(f"Unknown sweep type: {sweep_type}")
+        print(f"Available: {', '.join(sweeps.keys())}")
+        raise typer.Exit(1)
+
+    config = sweeps[sweep_type]()
+    sweeper = WandBSweep(config)
+
+    print(f"Running sweep: {config.name}")
+    print(f"  Method: {config.method}")
+    print(f"  Metric: {config.metric} ({config.goal})")
+    print(f"  Combinations: {len(config.expand_grid())}")
+
+    if sweep_type == "agent-profile":
+
+        def train_fn(params: dict) -> dict:
+            sim_config = SimConfig(
+                groundedness_target=params.get("groundedness_target", 0.85),
+                verification_pass_rate=params.get("verification_pass_rate", 0.80),
+                tool_success_rate=params.get("tool_success_rate", 0.90),
+                hallucination_rate=params.get("hallucination_rate", 0.05),
+            )
+            from agentops.evals.benchmarks import SUPPORT_TICKETS_BENCH
+            from agentops.evals.metrics import compute_metrics
+
+            sim = SimulatedAgent(config=sim_config, seed=42)
+            import asyncio
+
+            composites = []
+            for task in SUPPORT_TICKETS_BENCH.tasks:
+                result = asyncio.run(sim.run(task.question, task_id=task.id))
+                metrics = compute_metrics(result, key_terms=task.key_terms)
+                composites.append(metrics.composite)
+
+            return {
+                "composite_mean": sum(composites) / len(composites) if composites else 0,
+                "composite_min": min(composites) if composites else 0,
+                "composite_max": max(composites) if composites else 0,
+            }
+
+    else:  # retrieval
+        from agentops.retrieval.engine import RetrievalEngine
+        from agentops.retrieval.ingest import DocumentIngestor
+        from agentops.evals.simulator import SimulatedAgent, PRODUCTION_AGENT
+
+        def train_fn(params: dict) -> dict:
+            ingestor = DocumentIngestor(
+                chunk_size=params.get("chunk_size", 512),
+                chunk_overlap=params.get("chunk_overlap", 64),
+            )
+            sample_data = Path(__file__).parent.parent.parent.parent / "sample_data" / "docs"
+            if sample_data.exists():
+                chunks = ingestor.ingest_directory(str(sample_data))
+            else:
+                chunks = ingestor.ingest_texts([
+                    "Sample document for retrieval testing.",
+                    "Another document with different content.",
+                ])
+
+            engine = RetrievalEngine()
+            engine.index(chunks)
+
+            # Test retrieval on a few queries
+            queries = ["database configuration", "API authentication", "deployment guide"]
+            precision_scores = []
+            for q in queries:
+                results = engine.search(q, k=params.get("top_k", 5))
+                if results:
+                    precision_scores.append(len(results) / params.get("top_k", 5))
+
+            avg_precision = sum(precision_scores) / len(precision_scores) if precision_scores else 0
+            return {"citation_precision_mean": round(avg_precision, 3)}
+
+    print("Running sweep combinations...")
+    results = sweeper.run_local_grid(train_fn, output_dir=output_dir)
+
+    # Display results
+    print(f"\nSweep complete: {len(results)} runs")
+    if sweeper.best_result:
+        best = sweeper.best_result
+        print(f"\nBest configuration:")
+        for k, v in best["config"].items():
+            print(f"  {k}: {v}")
+        print(f"\nBest metrics:")
+        for k, v in best["metrics"].items():
+            print(f"  {k}: {v}")
+        print(f"  Duration: {best['duration_seconds']}s")
+
+    print(f"\nResults saved to: {output_dir}/")
+
+
+@mlops_app.command("track")
+def mlops_track(
+    benchmark: str = typer.Option(
+        "all", "--benchmark", "-b",
+        help="Benchmark to run: all, support-tickets, code-review, etc.",
+    ),
+    project: str = typer.Option(
+        "agentops-reliability-platform", "--project", "-p",
+        help="W&B project name",
+    ),
+    tags: str = typer.Option(
+        "", "--tags",
+        help="Comma-separated tags for the run",
+    ),
+    notes: str = typer.Option(
+        "", "--notes", "-n",
+        help="Run description / notes",
+    ),
+    output_dir: str = typer.Option(
+        "./track_results", "--output", "-o",
+        help="Directory to save tracking output",
+    ),
+):
+    """Track an evaluation run with W&B experiment tracking.
+
+    Runs benchmarks against the simulated agent and logs all metrics,
+    configs, and artifacts to W&B (or local JSON if W&B not installed).
+
+    Examples:
+        agentops mlops track --benchmark support-tickets --tags v0.20,benchmark
+        agentops mlops track --benchmark all --project my-evals --notes "Baseline run"
+    """
+    from agentops.mlops.tracker import WandBTracker
+    from agentops.evals.benchmarks import ALL_BENCHMARKS, SUPPORT_TICKETS_BENCH
+    from agentops.evals.harness import EvalHarness
+    from agentops.evals.simulator import SimulatedAgent, PRODUCTION_AGENT
+
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
+    tracker = WandBTracker(
+        project=project,
+        tags=tag_list,
+        notes=notes,
+        local_dir=output_dir,
+        config={"benchmark": benchmark},
+    )
+
+    run_name = f"eval-{benchmark}-{int(time.time())}"
+    tracker.init_run(run_name=run_name)
+
+    print(f"Tracking run: {run_name}")
+    print(f"  Project: {project}")
+    print(f"  Mode: {'W&B online' if tracker.is_available else 'local JSON fallback'}")
+    print(f"  Tags: {tag_list or 'none'}")
+    print(f"  Notes: {notes or 'none'}")
+
+    # Run benchmarks
+    if benchmark == "all":
+        benchmarks = ALL_BENCHMARKS
+    elif benchmark == "support-tickets":
+        benchmarks = [SUPPORT_TICKETS_BENCH]
+    else:
+        benchmarks = [b for b in ALL_BENCHMARKS if b.name == benchmark]
+        if not benchmarks:
+            print(f"Unknown benchmark: {benchmark}")
+            available = [b.name for b in ALL_BENCHMARKS]
+            print(f"Available: {', '.join(available)}")
+            raise typer.Exit(1)
+
+    sim_agent = SimulatedAgent(config=PRODUCTION_AGENT, seed=42)
+    harness = EvalHarness(sim_agent, model="simulated", output_dir=output_dir)
+
+    import asyncio
+
+    for bench in benchmarks:
+        print(f"\nRunning: {bench.name}")
+        report = asyncio.run(harness.run_with_simulator(bench))
+
+        # Log full report to tracker
+        tracker.log_benchmark_report(
+            report,
+            benchmark_config={
+                "name": bench.name,
+                "description": bench.description,
+                "num_tasks": len(bench.tasks),
+                "categories": list(set(t.category for t in bench.tasks)),
+            },
+        )
+
+        # Log report artifact
+        report_path = Path(output_dir) / f"{bench.name}_report.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(report.to_markdown())
+        tracker.log_artifact(str(report_path), name=f"{bench.name}_report.md")
+
+    tracker.finish()
+    print(f"\nTracking complete!")
+    print(f"Results saved to: {output_dir}/")
+
+
+app.add_typer(mlops_app, name="mlops")
 
 if __name__ == "__main__":
     app()
