@@ -29,3 +29,7 @@
 ## Completed (21/21)
 
 - [x] v0.21 — Model Router (cost/latency/capability-aware routing, 5 strategies, budget enforcement, per-model stats)
+
+## Completed (22/22)
+
+- [x] v0.22 — Production RAG Retrieval (RecursiveCharacterSplitter, SemanticChunker, CrossEncoderReranker, LLMReranker, BEIR-style eval metrics: NDCG@k, MRR, Recall@k, Precision@k, MAP, context_relevance, answer_faithfulness)
