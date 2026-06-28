@@ -21,7 +21,7 @@ Designed to bridge the gap between research prototypes and production
 agent systems by making observability and evaluation first-class concerns.
 """
 
-__version__ = "0.25.0"
+__version__ = "0.28.0"
 
 # Lazy-import SDK on first access so the module is available without
 # pulling in the full SDK deps at import time.

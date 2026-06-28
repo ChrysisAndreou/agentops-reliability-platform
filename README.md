@@ -5,7 +5,7 @@
 [![CI](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1432%20passed-brightgreen)](https://github.com/ChrysisAndreou/agentops-reliability-platform)
+[![Tests](https://img.shields.io/badge/tests-1502%20passed-brightgreen)](https://github.com/ChrysisAndreou/agentops-reliability-platform)
 
 ---
 
@@ -991,6 +991,18 @@ email.send(alert)
 - [x] SDK / client library — decorators, context managers, logging helpers, HTTP client, CLI, 71 tests (v0.14)
 - [x] Streaming verification — real-time claim checking, 4 strategies, abort-on-hallucination, sync/async generators, CLI eval, 112 tests (v0.15)
 - [x] Alerting integrations — Slack Block Kit, Discord embeds, SMTP email, 41 tests (v0.16)
+- [x] OpenTelemetry observability — OTLP span export, 7 production metrics, Jaeger/Grafana (v0.17)
+- [x] Production Readiness Assessment — 8-dimension composite score, CI gate (v0.18)
+- [x] Pluggable LLM backends — OpenAI, Anthropic, DeepSeek with RealLLMAgent (v0.19)
+- [x] W&B experiment tracking — WandBTracker, SweepConfig, WandBSweep, model registry, 48 tests (v0.20)
+- [x] Model Router — cost/latency/capability-aware routing, 5 strategies, budget enforcement (v0.21)
+- [x] Production RAG retrieval — chunking strategies, cross-encoder reranking, BEIR-style evaluation, 73 tests (v0.22)
+- [x] Streaming Performance Evaluation — TTFT, inter-token latency, TPS throughput, stall detection, 37 tests (v0.23)
+- [x] Failure Mode Analysis — 33 failure modes, 9 categories, automated detection, root cause analysis, 66 tests (v0.24)
+- [x] Security Red-Teaming — 27 attacks, MITRE ATLAS & OWASP mapping, 3 intensity profiles, 94 tests (v0.25)
+- [x] Agent A/B Testing & Canary Deployment — 7 statistical tests, traffic splitting, staged rollout, 102 tests (v0.26)
+- [x] Cost Economics & Token Optimization — 20+ model pricing, hierarchical tracking, budget enforcement, 130 tests (v0.27)
+- [x] EU AI Act Compliance — risk classification, 18 conformity requirements, Annex IV docs, auditing, 70 tests (v0.28)
 - [ ] SDK package published to PyPI (`pip install agentops`)
 
 ---
