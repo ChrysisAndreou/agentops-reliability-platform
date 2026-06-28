@@ -1,6 +1,6 @@
 # AgentOps Reliability Platform — Roadmap
 
-## Completed (17/18)
+## Completed (19/19)
 
 - [x] v0.1 — Core agent orchestration (LangGraph pipeline: plan → retrieve → execute → verify → respond)
 - [x] v0.2 — Hybrid retrieval (BM25 + dense embeddings) with citation tracking
@@ -19,8 +19,9 @@
 - [x] v0.15 — Streaming verification (4 strategies: STRICT, THRESHOLD, LENIENT, ACCUMULATING)
 - [x] v0.16 — Alerting integrations (Slack Block Kit, Discord embeds, SMTP email, zero deps)
 - [x] v0.17 — OpenTelemetry observability (OTLP span export, 7 production metrics)
+- [x] v0.18 — Production Readiness Assessment (8-dimension composite score, CI gate)
+- [x] v0.19 — Pluggable LLM backends (OpenAI, Anthropic, DeepSeek) with RealLLMAgent
 
-## Remaining
+## Completed (20/20)
 
-- [x] v0.18 — Production Readiness Assessment (8-dimension composite score, CI gate, 5 scenarios)
-- [x] v0.19 — Pluggable LLM backends (OpenAI, Anthropic, DeepSeek) with RealLLMAgent for non-simulated benchmarks
+- [x] v0.20 — W&B experiment tracking (WandBTracker, SweepConfig, WandBSweep, local fallback, model registry, 48 tests)
