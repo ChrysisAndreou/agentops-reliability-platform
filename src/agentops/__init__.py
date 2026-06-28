@@ -5,7 +5,7 @@ A production-oriented toolkit for building, tracing, evaluating, and
 improving the reliability of tool-using AI agents. Provides:
 
 - LangGraph agent orchestration with typed tools and failure handling
-- Hybrid retrieval with verifiable citations
+- Production RAG retrieval: hybrid search (BM25+dense), multiple chunking strategies (recursive, semantic, paragraph), cross-encoder/LLM reranking, BEIR-style evaluation with NDCG/MRR/Recall/Precision/MAP metrics, built-in retrieval benchmark corpus (20 docs, 10 queries)
 - SQLite-backed trace store with replay and failure classification
 - Systematic evaluation harness with reliability metrics (20 benchmarks)
 - W&B experiment tracking, artifact management, and hyperparameter sweeps
@@ -19,7 +19,7 @@ Designed to bridge the gap between research prototypes and production
 agent systems by making observability and evaluation first-class concerns.
 """
 
-__version__ = "0.21.0"
+__version__ = "0.22.0"
 
 # Lazy-import SDK on first access so the module is available without
 # pulling in the full SDK deps at import time.
