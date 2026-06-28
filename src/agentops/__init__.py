@@ -9,6 +9,7 @@ improving the reliability of tool-using AI agents. Provides:
 - SQLite-backed trace store with replay and failure classification
 - Systematic evaluation harness with reliability metrics (20 benchmarks)
 - Streaming Performance Evaluation: TTFT, inter-token latency (P50/P90/P95/P99), tokens-per-second throughput, stall detection, partial-output quality snapshots at 25%/50%/75%, 10-query benchmark corpus across 4 response categories (short/medium/long/technical), regression testing with configurable tolerance thresholds
+- Failure Mode Analysis: 33-mode taxonomy across 9 categories (factuality, tooling, control flow, context, security, infrastructure, quality, performance, coordination), automated detection with pattern-based heuristics, root cause analysis with causal chain modeling, failure clustering, and structured analysis reports with prioritized remediation recommendations
 - W&B experiment tracking, artifact management, and hyperparameter sweeps
 - Pluggable LLM backends (OpenAI, Anthropic, DeepSeek) with real-API agents
 - Model Router with cost/latency/capability-aware routing and budget enforcement
@@ -20,7 +21,7 @@ Designed to bridge the gap between research prototypes and production
 agent systems by making observability and evaluation first-class concerns.
 """
 
-__version__ = "0.22.0"
+__version__ = "0.24.0"
 
 # Lazy-import SDK on first access so the module is available without
 # pulling in the full SDK deps at import time.

@@ -33,3 +33,7 @@
 ## Completed (23/23)
 
 - [x] v0.23 — Streaming Performance Evaluation (TTFT, inter-token latency P50/P90/P95/P99, TPS throughput, stall detection, partial-output quality snapshots, 10-query benchmark corpus across 4 response categories, regression testing with tolerance thresholds, simulated stream for CI reproducibility)
+
+## Completed (24/24)
+
+- [x] v0.24 — Failure Mode Analysis & Taxonomy (33 failure modes across 9 categories, automated detection with pattern-based heuristics, root cause analysis with causal chain modeling, failure clustering with impact scoring, structured FailureAnalysisReport with reliability scoring and prioritized remediation recommendations, 66 tests)
