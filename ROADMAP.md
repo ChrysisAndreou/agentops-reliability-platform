@@ -1,6 +1,6 @@
 # AgentOps Reliability Platform — Roadmap
 
-## Completed (19/19)
+## Completed (26/26)
 
 - [x] v0.1 — Core agent orchestration (LangGraph pipeline: plan → retrieve → execute → verify → respond)
 - [x] v0.2 — Hybrid retrieval (BM25 + dense embeddings) with citation tracking
@@ -21,23 +21,10 @@
 - [x] v0.17 — OpenTelemetry observability (OTLP span export, 7 production metrics)
 - [x] v0.18 — Production Readiness Assessment (8-dimension composite score, CI gate)
 - [x] v0.19 — Pluggable LLM backends (OpenAI, Anthropic, DeepSeek) with RealLLMAgent
-
-## Completed (20/20)
-
 - [x] v0.20 — W&B experiment tracking (WandBTracker, SweepConfig, WandBSweep, local fallback, model registry, 48 tests)
-
-## Completed (21/21)
-
 - [x] v0.21 — Model Router (cost/latency/capability-aware routing, 5 strategies, budget enforcement, per-model stats)
-
-## Completed (23/23)
-
+- [x] v0.22 — Production RAG retrieval (chunking strategies, cross-encoder reranking, BEIR-style evaluation: NDCG@k, MRR, Recall@k, MAP, faithfulness; 73 tests)
 - [x] v0.23 — Streaming Performance Evaluation (TTFT, inter-token latency P50/P90/P95/P99, TPS throughput, stall detection, partial-output quality snapshots, 10-query benchmark corpus across 4 response categories, regression testing with tolerance thresholds, simulated stream for CI reproducibility)
-
-## Completed (24/24)
-
 - [x] v0.24 — Failure Mode Analysis & Taxonomy (33 failure modes across 9 categories, automated detection with pattern-based heuristics, root cause analysis with causal chain modeling, failure clustering with impact scoring, structured FailureAnalysisReport with reliability scoring and prioritized remediation recommendations, 66 tests)
-
-## Completed (26/26)
-
+- [x] v0.25 — Security Red-Teaming (27 attack techniques across 5 categories, MITRE ATLAS and OWASP LLM Top 10 mapping, 3 intensity profiles, composite security score, CI-friendly exit codes, 94 tests)
 - [x] v0.26 — Agent A/B Testing & Canary Deployment (statistical experiment framework with chi-squared, Fisher's exact, Bayesian A/B, Welch's t-test, Mann-Whitney U; traffic splitting with deterministic hash-based assignment; canary deployment with staged rollout, automatic regression detection, and configurable rollback conditions; structured A/B evaluation reports with markdown output; 102 tests)

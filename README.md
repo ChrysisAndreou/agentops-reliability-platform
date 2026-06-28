@@ -5,7 +5,7 @@
 [![CI](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/ChrysisAndreou/agentops-reliability-platform/actions/workflows/ci.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-1302%20passed-brightgreen)](https://github.com/ChrysisAndreou/agentops-reliability-platform)
+[![Tests](https://img.shields.io/badge/tests-1313%20passed-brightgreen)](https://github.com/ChrysisAndreou/agentops-reliability-platform)
 
 ---
 
