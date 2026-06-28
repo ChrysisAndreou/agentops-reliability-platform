@@ -10,6 +10,7 @@ improving the reliability of tool-using AI agents. Provides:
 - Systematic evaluation harness with reliability metrics (20 benchmarks)
 - W&B experiment tracking, artifact management, and hyperparameter sweeps
 - Pluggable LLM backends (OpenAI, Anthropic, DeepSeek) with real-API agents
+- Model Router with cost/latency/capability-aware routing and budget enforcement
 - FastAPI server and CLI for trace/eval inspection
 - Production readiness assessment (8-dimension composite, CI gate)
 - SDK/client library for agent instrumentation (v0.14)
@@ -18,7 +19,7 @@ Designed to bridge the gap between research prototypes and production
 agent systems by making observability and evaluation first-class concerns.
 """
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 # Lazy-import SDK on first access so the module is available without
 # pulling in the full SDK deps at import time.

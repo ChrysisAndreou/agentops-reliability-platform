@@ -25,3 +25,7 @@
 ## Completed (20/20)
 
 - [x] v0.20 — W&B experiment tracking (WandBTracker, SweepConfig, WandBSweep, local fallback, model registry, 48 tests)
+
+## Completed (21/21)
+
+- [x] v0.21 — Model Router (cost/latency/capability-aware routing, 5 strategies, budget enforcement, per-model stats)

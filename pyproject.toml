@@ -1,7 +1,7 @@
 [project]
 name = "agentops-reliability-platform"
-version = "0.20.0"
-description = "Production-oriented AgentOps reliability and evaluation platform for tool-using AI agents — with SDK for agent instrumentation, live observability dashboard, Slack/Discord/Email alerting, streaming verification, W&B experiment tracking, hyperparameter sweeps, 20 evaluation benchmarks, and 893 tests"
+version = "0.21.0"
+description = "Production-oriented AgentOps reliability and evaluation platform for tool-using AI agents — with model router, cost/latency-aware routing, budget enforcement, SDK for agent instrumentation, live observability dashboard, Slack/Discord/Email alerting, streaming verification, W&B experiment tracking, hyperparameter sweeps, 20 evaluation benchmarks, and 893+ tests"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
